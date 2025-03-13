@@ -2,6 +2,8 @@
 
 [Animated Animator Parameters (AAP)](https://vrc.school/docs/Other/AAPs/) utilities
 
+![AAPMA](AAPMA.png)
+
 ## Install
 
 ### VCC用インストーラーunitypackageによる方法（おすすめ）
