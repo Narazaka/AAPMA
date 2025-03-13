@@ -2,7 +2,7 @@
   "name": "net.narazaka.vrchat.aapma",
   "version": "1.0.0",
   "displayName": "Animated Animator Parameters for MA",
-  "description": "Animated Animator Parameters for MA",
+  "description": "Animated Animator Parameters (AAP) utilities",
   "author": {
     "name": "Narazaka",
     "url": "https://github.com/Narazaka"
@@ -12,7 +12,7 @@
   "url" : "https://github.com/Narazaka/AAPMA.git",
   "unity": "2022.3",
   "vpmDependencies": {
-    "com.vrchat.avatars": ">=3.7.5",
-    "com.vrchat.worlds": ">=3.7.5"
+    "com.vrchat.avatars": ">=3",
+    "nadena.dev.modular-avatar": ">=1.8.0"
   }
 }

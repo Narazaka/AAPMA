@@ -14,3 +14,4 @@ jobs:
     uses: Narazaka/vpm-repos/.github/workflows/release.yml@main
     with:
       novcc: false
+      ma: true

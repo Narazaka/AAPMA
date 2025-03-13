@@ -1,0 +1,22 @@
+{
+    "name": "Narazaka.Unity.AAPMA.Editor",
+    "rootNamespace": "",
+    "references": [
+        "VRC.SDKBase",
+        "Narazaka.Unity.AAPMA",
+        "nadena.dev.ndmf",
+        "nadena.dev.ndmf.vrchat",
+        "nadena.dev.modular-avatar.core"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
