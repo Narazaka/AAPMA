@@ -2,7 +2,7 @@
 
 [Animated Animator Parameters (AAP)](https://vrc.school/docs/Other/AAPs/) utilities
 
-![AAPMA](AAPMA.png)
+![AAPMA](doc~/AAPMA.png)
 
 ## Install
 
