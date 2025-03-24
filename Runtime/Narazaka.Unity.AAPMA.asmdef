@@ -2,7 +2,8 @@
     "name": "Narazaka.Unity.AAPMA",
     "rootNamespace": "",
     "references": [
-        "VRC.SDKBase"
+        "VRC.SDKBase",
+        "nadena.dev.ndmf"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
