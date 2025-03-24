@@ -10,7 +10,7 @@ namespace Narazaka.Unity.AAPMA
         Subtraction,
         [IString("Multiplication(*)", "乗算(×)")]
         Multiplication,
-        [IString("Division(/)", "除算(÷)")]
+        [IString("Division( ∕ )", "除算(÷)")]
         Division,
         /*
         And,
