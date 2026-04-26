@@ -1,0 +1,50 @@
+name: GameCI
+
+on:
+  push: {}
+  pull_request_target: {}
+  workflow_dispatch: {}
+
+jobs:
+  release:
+    needs: test
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    permissions:
+      contents: write
+    uses: Narazaka/vpm-repos/.github/workflows/release.yml@main
+    with:
+      ma: true
+      exclude: |
+        Tests
+        Tests.meta
+
+  test:
+    uses: Narazaka/vpm-repos/.github/workflows/gameci.yml@main
+    permissions:
+      checks: write
+    secrets:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+    with:
+      unity: ${{ matrix.unity }}
+      vrcsdk-type: avatars
+      vrcsdk-version: ${{ matrix.vrcsdk-version }}
+      repos: |
+        https://vpm.nadena.dev/vpm.json
+        https://vpm.narazaka.net/index.json
+      packages: |
+        nadena.dev.modular-avatar ${{ matrix.ma }}
+      name: MA=${{ matrix.ma }}
+      assemblyNames: Narazaka.Unity.AAPMA.Editor.Tests
+      assemblyFilters: +Narazaka.Unity.AAPMA.*,-Narazaka.Unity.AAPMA.Editor.Tests
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - unity: 2022.3.6f1
+            ma: 1.8.0
+            vrcsdk-version: 3.5.2
+          - unity: 2022.3.22f1
+            ma: 1.14.3
+            vrcsdk-version: 3.9.1-beta.1
