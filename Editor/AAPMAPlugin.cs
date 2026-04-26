@@ -49,6 +49,17 @@ namespace Narazaka.Unity.AAPMA.Editor
             List<string> _parameters = new List<string>();
             List<AnimatorControllerLayer> _layers = new List<AnimatorControllerLayer>();
             List<ChildMotion> _childMotions = new List<ChildMotion>();
+            Dictionary<float, string> _hiddenConsts = new Dictionary<float, string>();
+
+            string HiddenConst(float value)
+            {
+                if (!_hiddenConsts.TryGetValue(value, out var name))
+                {
+                    name = $"__AAPMA__Const_{value:G9}__".Replace('.', '_').Replace('-', 'm');
+                    _hiddenConsts.Add(value, name);
+                }
+                return name;
+            }
 
             public AnimatorController Build(AAPSetting[] settings)
             {
@@ -82,6 +93,12 @@ namespace Narazaka.Unity.AAPMA.Editor
                         defaultFloat = 1,
                     },
                     })
+                    .Concat(_hiddenConsts.Select(kv => new AnimatorControllerParameter
+                    {
+                        name = kv.Value,
+                        type = AnimatorControllerParameterType.Float,
+                        defaultFloat = kv.Key,
+                    }))
                     .ToArray(),
                 };
                 return animator;
@@ -105,6 +122,9 @@ namespace Narazaka.Unity.AAPMA.Editor
                         break;
                     case LogicType.Division:
                         Division(setting);
+                        break;
+                    case LogicType.ExponentialSmoothing:
+                        ExponentialSmoothing(setting);
                         break;
                 }
             }
@@ -189,24 +209,55 @@ namespace Narazaka.Unity.AAPMA.Editor
                 AddLayerForMotion(direct);
             }
 
+            void ExponentialSmoothing(AAPSetting setting)
+            {
+                var inputName = setting.Input1.Parameter;
+                var outputName = setting.Output.Parameter;
+                var min = setting.Input1.Min;
+                var max = setting.Input1.Max;
+
+                _parameters.Add(inputName);
+                _parameters.Add(outputName);
+
+                var minClip = NewClip(outputName, min);
+                var maxClip = NewClip(outputName, max);
+
+                var innerA = New1D($"{outputName} := {inputName}", inputName, min, minClip, max, maxClip);
+                var innerB = New1D($"{outputName} := {outputName}", outputName, min, minClip, max, maxClip);
+
+                string smoothAmountSource;
+                if (setting.CoefficientUseParameter)
+                {
+                    smoothAmountSource = setting.CoefficientParameter;
+                    _parameters.Add(smoothAmountSource);
+                }
+                else
+                {
+                    smoothAmountSource = HiddenConst(setting.CoefficientValue);
+                }
+
+                var outer = New1D($"ExpSmooth {outputName}", smoothAmountSource, 0, innerA, 1, innerB);
+                AddLayerForMotion(outer, writeDefaultValues: false);
+            }
+
             void AddChildMotion(string parameter, Motion motion)
             {
                 _childMotions.Add(new ChildMotion { motion = motion, directBlendParameter = parameter });
             }
 
-            void AddLayerForMotion(Motion motion)
+            void AddLayerForMotion(Motion motion, bool writeDefaultValues = true)
             {
-                _layers.Add(MakeLayerForMotion(motion));
+                _layers.Add(MakeLayerForMotion(motion, writeDefaultValues));
             }
 
-            AnimatorControllerLayer MakeLayerForMotion(Motion motion)
+            AnimatorControllerLayer MakeLayerForMotion(Motion motion, bool writeDefaultValues = true)
             {
                 var state = new AnimatorState
                 {
                     name = motion.name,
                     hideFlags = HideFlags.HideInHierarchy,
                     motion = motion,
-                    writeDefaultValues = true,
+                    writeDefaultValues = writeDefaultValues,
                 };
                 var stateMachine = new AnimatorStateMachine
                 {
