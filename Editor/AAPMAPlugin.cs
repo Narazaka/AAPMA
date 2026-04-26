@@ -50,6 +50,9 @@ namespace Narazaka.Unity.AAPMA.Editor
             List<AnimatorControllerLayer> _layers = new List<AnimatorControllerLayer>();
             List<ChildMotion> _childMotions = new List<ChildMotion>();
             Dictionary<float, string> _hiddenConsts = new Dictionary<float, string>();
+            int _linDeltaCounter = 0;
+
+            string NewLinDeltaName() => $"__AAPMA__LinDelta_{_linDeltaCounter++}__";
 
             string HiddenConst(float value)
             {
@@ -126,6 +129,9 @@ namespace Narazaka.Unity.AAPMA.Editor
                         break;
                     case LogicType.ExponentialSmoothing:
                         ExponentialSmoothing(setting);
+                        break;
+                    case LogicType.LinearSmoothing:
+                        LinearSmoothing(setting);
                         break;
                 }
             }
@@ -241,6 +247,59 @@ namespace Narazaka.Unity.AAPMA.Editor
                 AddLayerForMotion(outer, writeDefaultValues: false);
             }
 
+            void LinearSmoothing(AAPSetting setting)
+            {
+                var inputName = setting.Input1.Parameter;
+                var outputName = setting.Output.Parameter;
+                var min = setting.Input1.Min;
+                var max = setting.Input1.Max;
+                var coef = setting.CoefficientValue;
+
+                _parameters.Add(inputName);
+                _parameters.Add(outputName);
+
+                var deltaName = NewLinDeltaName();
+                _parameters.Add(deltaName);
+
+                var deltaInput = New1D($"Delta := {inputName}", inputName,
+                    min, NewClip(deltaName, min),
+                    max, NewClip(deltaName, max));
+
+                var deltaMinusOutput = New1D($"Delta := -{outputName}", outputName,
+                    min, NewClip(deltaName, max),  // swap
+                    max, NewClip(deltaName, min));
+
+                var outputSelf = New1D($"{outputName} := {outputName}", outputName,
+                    min, NewClip(outputName, min),
+                    max, NewClip(outputName, max));
+
+                var linearBlend = New1DTriple($"clamp({inputName}-{outputName}, ±{coef})",
+                    deltaName,
+                    -coef, NewClip(outputName, -1f),
+                    0f,    NewClip(outputName, 0f),
+                    +coef, NewClip(outputName, +1f));
+
+                string stepSizeSource;
+                if (setting.CoefficientUseParameter)
+                {
+                    stepSizeSource = setting.CoefficientParameter;
+                    _parameters.Add(stepSizeSource);
+                }
+                else
+                {
+                    stepSizeSource = HiddenConst(setting.CoefficientValue);
+                }
+
+                var root = NewDirect($"LinSmooth {outputName}", add =>
+                {
+                    add(OneParameter, deltaInput);
+                    add(OneParameter, deltaMinusOutput);
+                    add(OneParameter, outputSelf);
+                    add(stepSizeSource, linearBlend);
+                });
+                AddLayerForMotion(root, writeDefaultValues: true);
+            }
+
             void AddChildMotion(string parameter, Motion motion)
             {
                 _childMotions.Add(new ChildMotion { motion = motion, directBlendParameter = parameter });
@@ -307,6 +366,19 @@ namespace Narazaka.Unity.AAPMA.Editor
             BlendTree New1D(string name, string parameter, Motion start, Motion end)
             {
                 return New1D(name, parameter, 0, start, 1, end);
+            }
+
+            BlendTree New1DTriple(string name, string parameter,
+                float t0, Motion m0, float t1, Motion m1, float t2, Motion m2)
+            {
+                var bt = New1D(name, parameter);
+                bt.children = new[]
+                {
+                    new ChildMotion { motion = m0, threshold = t0 },
+                    new ChildMotion { motion = m1, threshold = t1 },
+                    new ChildMotion { motion = m2, threshold = t2 },
+                };
+                return bt;
             }
 
             BlendTree NewDirect(string name)
