@@ -49,11 +49,16 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
         [Test]
         public void NoMovementWhenInputEqualsOutput()
         {
-            var controller = new AAPMAPlugin.LayerPass().Build(new[] { Make(0.05f) });
+            // 1-frame Delta lag のため、StepSize=deadband だと target 付近で振動する。
+            // 「収束後に動かない」を担保するには StepSize < deadband が必要なので、
+            // parametric モードで Max=0.1 / 実 StepSize=0.02 (比 1:5) に設定する。
+            var setting = Make(0.1f, asParam: true, paramName: "Step");
+            var controller = new AAPMAPlugin.LayerPass().Build(new[] { setting });
 
             using var ev = new AnimatorEvaluator(controller);
+            ev.SetFloat("Step", 0.02f);
             ev.SetFloat("In", 0.3f);
-            ev.Step(100); // converge first
+            ev.Step(300); // converge first
             var converged = ev.GetFloat("Out");
 
             ev.Step(50); // hold

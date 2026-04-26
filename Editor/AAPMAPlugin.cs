@@ -266,8 +266,8 @@ namespace Narazaka.Unity.AAPMA.Editor
                     max, NewClip(deltaName, max));
 
                 var deltaMinusOutput = New1D($"Delta := -{outputName}", outputName,
-                    min, NewClip(deltaName, max),  // swap
-                    max, NewClip(deltaName, min));
+                    min, NewClip(deltaName, -min),
+                    max, NewClip(deltaName, -max));
 
                 var outputSelf = New1D($"{outputName} := {outputName}", outputName,
                     min, NewClip(outputName, min),
