@@ -1,0 +1,23 @@
+{
+    "name": "Narazaka.Unity.AAPMA.Editor.Tests",
+    "rootNamespace": "",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Narazaka.Unity.AAPMA",
+        "Narazaka.Unity.AAPMA.Editor",
+        "VRC.SDKBase",
+        "nadena.dev.modular-avatar.core"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
