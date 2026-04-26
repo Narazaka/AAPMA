@@ -350,8 +350,6 @@ namespace Narazaka.Unity.AAPMA.Editor
             public static istring SmoothAmount = new istring("SmoothAmount", "平滑化量");
             public static istring StepSize = new istring("StepSize", "ステップ幅");
             public static istring AsParameter = new istring("as Parameter", "パラメータで指定");
-            public static istring Value = new istring("Value", "値");
-            public static istring Parameter = new istring("Parameter", "パラメータ");
         }
 
         class DrawerHeight : DrawerBase
