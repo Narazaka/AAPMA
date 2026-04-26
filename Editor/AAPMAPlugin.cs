@@ -55,7 +55,8 @@ namespace Narazaka.Unity.AAPMA.Editor
             {
                 if (!_hiddenConsts.TryGetValue(value, out var name))
                 {
-                    name = $"__AAPMA__Const_{value:G9}__".Replace('.', '_').Replace('-', 'm');
+                    name = $"__AAPMA__Const_{value:G9}__"
+                        .Replace('.', '_').Replace('-', 'm').Replace('+', 'p').Replace('E', 'e');
                     _hiddenConsts.Add(value, name);
                 }
                 return name;

@@ -74,5 +74,70 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
 
             Assert.That(ev.GetFloat("Out"), Is.EqualTo(-7f).Within(0.01f));
         }
+
+        [Test]
+        public void AsymmetricRange_ConvergesToInput()
+        {
+            // Range [0.2, 0.8] is asymmetric (not centered on 0). Verify the smoother
+            // still converges correctly when Input.Min/Max are not symmetric around 0.
+            var setting = new AAPSetting
+            {
+                Type = LogicType.ExponentialSmoothing,
+                Input1 = new AAPParameter { Parameter = "In", Min = 0.2f, Max = 0.8f },
+                Output = new AAPParameter { Parameter = "Out", Min = 0.2f, Max = 0.8f },
+                CoefficientUseParameter = false,
+                CoefficientValue = 0.5f,
+            };
+            var controller = new AAPMAPlugin.LayerPass().Build(new[] { setting });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetFloat("In", 0.5f);
+            ev.Step(50);
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(0.5f).Within(0.001f));
+        }
+
+        [Test]
+        public void InputAtMaxBoundary_ConvergesToMax()
+        {
+            // When Input is exactly at Max, Output should converge to Max.
+            var setting = new AAPSetting
+            {
+                Type = LogicType.ExponentialSmoothing,
+                Input1 = new AAPParameter { Parameter = "In", Min = 0f, Max = 10f },
+                Output = new AAPParameter { Parameter = "Out", Min = 0f, Max = 10f },
+                CoefficientUseParameter = false,
+                CoefficientValue = 0.5f,
+            };
+            var controller = new AAPMAPlugin.LayerPass().Build(new[] { setting });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetFloat("In", 10f);
+            ev.Step(50);
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(10f).Within(0.01f));
+        }
+
+        [Test]
+        public void InputBeyondMax_ClampsToMax()
+        {
+            // When Input exceeds Max, BlendTree clamps the input to the threshold edge,
+            // so the smoother converges to Max (not the out-of-range Input value).
+            var setting = new AAPSetting
+            {
+                Type = LogicType.ExponentialSmoothing,
+                Input1 = new AAPParameter { Parameter = "In", Min = 0f, Max = 10f },
+                Output = new AAPParameter { Parameter = "Out", Min = 0f, Max = 10f },
+                CoefficientUseParameter = false,
+                CoefficientValue = 0.5f,
+            };
+            var controller = new AAPMAPlugin.LayerPass().Build(new[] { setting });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetFloat("In", 15f); // 範囲外
+            ev.Step(50);
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(10f).Within(0.01f));
+        }
     }
 }
