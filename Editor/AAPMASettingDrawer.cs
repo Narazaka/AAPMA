@@ -282,7 +282,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 DrawExpression($"{OutputName} := lerp({Input1Name}, {OutputName}, {(string)T.SmoothAmount})");
                 MinMax(_input1);
                 Param(_output);
-                Coefficient(T.SmoothAmount, withMaxField: false);
+                DrawCoefficient(T.SmoothAmount, withMaxField: false);
             }
 
             void LinearSmoothing()
@@ -290,10 +290,10 @@ namespace Narazaka.Unity.AAPMA.Editor
                 DrawExpression($"{OutputName} += clamp({Input1Name} - {OutputName}, -{(string)T.StepSize}, +{(string)T.StepSize})");
                 MinMax(_input1);
                 Param(_output);
-                Coefficient(T.StepSize, withMaxField: true);
+                DrawCoefficient(T.StepSize, withMaxField: true);
             }
 
-            void Coefficient(istring label, bool withMaxField)
+            void DrawCoefficient(istring label, bool withMaxField)
             {
                 var useParam = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientUseParameter));
                 var value = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientValue));
