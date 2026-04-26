@@ -8,6 +8,7 @@ using nadena.dev.modular_avatar.core;
 using UnityEditor;
 
 [assembly: ExportsPlugin(typeof(Narazaka.Unity.AAPMA.Editor.AAPMAPlugin))]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Narazaka.Unity.AAPMA.Editor.Tests")]
 
 namespace Narazaka.Unity.AAPMA.Editor
 {
@@ -28,7 +29,12 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             foreach (var pair in settingsByLayer)
             {
-                new LayerPass().PassLayer(ctx, pair.Key, pair.Value);
+                var animator = new LayerPass().Build(pair.Value);
+                if (animator == null) continue;
+                var mergeAnimator = ctx.AvatarRootObject.AddComponent<ModularAvatarMergeAnimator>();
+                mergeAnimator.animator = animator;
+                mergeAnimator.layerType = pair.Key;
+                mergeAnimator.matchAvatarWriteDefaults = false;
             }
 
             foreach (var aapma in aapmas)
@@ -37,16 +43,16 @@ namespace Narazaka.Unity.AAPMA.Editor
             }
         }
 
-        class LayerPass
+        internal class LayerPass
         {
             static string OneParameter = "__AAPMA__OneParameter__";
             List<string> _parameters = new List<string>();
             List<AnimatorControllerLayer> _layers = new List<AnimatorControllerLayer>();
             List<ChildMotion> _childMotions = new List<ChildMotion>();
 
-            public void PassLayer(BuildContext ctx, VRC.SDK3.Avatars.Components.VRCAvatarDescriptor.AnimLayerType layerType, AAPSetting[] settings)
+            public AnimatorController Build(AAPSetting[] settings)
             {
-                if (settings.Length == 0) return;
+                if (settings.Length == 0) return null;
 
                 foreach (var setting in settings)
                 {
@@ -78,10 +84,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                     })
                     .ToArray(),
                 };
-                var mergeAnimator = ctx.AvatarRootObject.AddComponent<ModularAvatarMergeAnimator>();
-                mergeAnimator.animator = animator;
-                mergeAnimator.layerType = layerType;
-                mergeAnimator.matchAvatarWriteDefaults = false;
+                return animator;
             }
 
             void ProcessSetting(AAPSetting setting)
