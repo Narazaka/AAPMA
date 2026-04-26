@@ -117,6 +117,12 @@ namespace Narazaka.Unity.AAPMA.Editor
                     case LogicType.Division:
                         Division();
                         break;
+                    case LogicType.ExponentialSmoothing:
+                        ExponentialSmoothing();
+                        break;
+                    case LogicType.LinearSmoothing:
+                        LinearSmoothing();
+                        break;
                 }
             }
 
@@ -271,6 +277,48 @@ namespace Narazaka.Unity.AAPMA.Editor
                 GUI.color = color;
             }
 
+            void ExponentialSmoothing()
+            {
+                DrawExpression($"{OutputName} := lerp({Input1Name}, {OutputName}, {(string)T.SmoothAmount})");
+                MinMax(_input1);
+                Param(_output);
+                Coefficient(T.SmoothAmount, withMaxField: false);
+            }
+
+            void LinearSmoothing()
+            {
+                DrawExpression($"{OutputName} += clamp({Input1Name} - {OutputName}, -{(string)T.StepSize}, +{(string)T.StepSize})");
+                MinMax(_input1);
+                Param(_output);
+                Coefficient(T.StepSize, withMaxField: true);
+            }
+
+            void Coefficient(istring label, bool withMaxField)
+            {
+                var useParam = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientUseParameter));
+                var value = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientValue));
+                var paramName = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientParameter));
+
+                EditorGUI.PropertyField(line, useParam, new GUIContent($"{(string)label}: {(string)T.AsParameter}"));
+                NextLine();
+
+                if (useParam.boolValue)
+                {
+                    EditorGUI.PropertyField(line, paramName, label.GUIContent);
+                    NextLine();
+                    if (withMaxField)
+                    {
+                        EditorGUI.PropertyField(line, value, T.Max.GUIContent);
+                        NextLine();
+                    }
+                }
+                else
+                {
+                    EditorGUI.PropertyField(line, value, label.GUIContent);
+                    NextLine();
+                }
+            }
+
             void DrawExpression(string expression)
             {
                 var color = GUI.color;
@@ -299,6 +347,11 @@ namespace Narazaka.Unity.AAPMA.Editor
             public static istring Input1 = new istring("Input1", "入力1");
             public static istring Input2 = new istring("Input2", "入力2");
             public static istring Output = new istring("Output", "出力");
+            public static istring SmoothAmount = new istring("SmoothAmount", "平滑化量");
+            public static istring StepSize = new istring("StepSize", "ステップ幅");
+            public static istring AsParameter = new istring("as Parameter", "パラメータで指定");
+            public static istring Value = new istring("Value", "値");
+            public static istring Parameter = new istring("Parameter", "パラメータ");
         }
 
         class DrawerHeight : DrawerBase
@@ -331,6 +384,24 @@ namespace Narazaka.Unity.AAPMA.Editor
                         break;
                     case LogicType.Division:
                         height += LineHeight + ParamHeight + ParamValueHeight;
+                        break;
+                    case LogicType.ExponentialSmoothing:
+                        height += LineHeight;        // expression
+                        height += ParamValueHeight;  // input + Min/Max
+                        height += ParamHeight;       // output
+                        height += LineHeight;        // checkbox
+                        height += LineHeight;        // value or paramName
+                        break;
+                    case LogicType.LinearSmoothing:
+                        height += LineHeight;        // expression
+                        height += ParamValueHeight;  // input + Min/Max
+                        height += ParamHeight;       // output
+                        height += LineHeight;        // checkbox
+                        height += LineHeight;        // value or paramName
+                        if (_property.FindPropertyRelative(nameof(AAPSetting.CoefficientUseParameter)).boolValue)
+                        {
+                            height += LineHeight;    // Max field (parametric mode only)
+                        }
                         break;
                 }
 
