@@ -13,7 +13,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 Input1 = new AAPParameter { Parameter = "In", Min = 0, Max = 1 },
                 Output = new AAPParameter { Parameter = "Out", Min = 0, Max = 1 },
                 CoefficientUseParameter = asParam,
-                CoefficientValue = coef,
+                LinStepSize = coef,
                 CoefficientParameter = paramName,
             };
 
@@ -74,7 +74,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 Input1 = new AAPParameter { Parameter = "InA", Min = 0, Max = 1 },
                 Output = new AAPParameter { Parameter = "OutA", Min = 0, Max = 1 },
                 CoefficientUseParameter = false,
-                CoefficientValue = 0.05f,
+                LinStepSize = 0.05f,
             };
             var s2 = new AAPSetting
             {
@@ -82,7 +82,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 Input1 = new AAPParameter { Parameter = "InB", Min = 0, Max = 1 },
                 Output = new AAPParameter { Parameter = "OutB", Min = 0, Max = 1 },
                 CoefficientUseParameter = false,
-                CoefficientValue = 0.05f,
+                LinStepSize = 0.05f,
             };
             var controller = new AAPMAPlugin.LayerPass().Build(new[] { s1, s2 });
 
@@ -105,7 +105,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 Input1 = new AAPParameter { Parameter = "In", Min = 0.2f, Max = 0.8f },
                 Output = new AAPParameter { Parameter = "Out", Min = 0.2f, Max = 0.8f },
                 CoefficientUseParameter = false,
-                CoefficientValue = 0.02f,
+                LinStepSize = 0.02f,
             };
             var controller = new AAPMAPlugin.LayerPass().Build(new[] { setting });
 
@@ -126,7 +126,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 Input1 = new AAPParameter { Parameter = "In", Min = 0f, Max = 1f },
                 Output = new AAPParameter { Parameter = "Out", Min = 0f, Max = 1f },
                 CoefficientUseParameter = false,
-                CoefficientValue = 0.05f,
+                LinStepSize = 0.05f,
             };
             var controller = new AAPMAPlugin.LayerPass().Build(new[] { setting });
 

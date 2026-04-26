@@ -13,7 +13,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 Input1 = new AAPParameter { Parameter = "In", Min = 0, Max = 1 },
                 Output = new AAPParameter { Parameter = "Out", Min = 0, Max = 1 },
                 CoefficientUseParameter = asParam,
-                CoefficientValue = smoothAmount,
+                ExpSmoothAmount = smoothAmount,
                 CoefficientParameter = paramName,
             };
 
@@ -64,7 +64,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 Input1 = new AAPParameter { Parameter = "In", Min = -10, Max = 10 },
                 Output = new AAPParameter { Parameter = "Out", Min = -10, Max = 10 },
                 CoefficientUseParameter = false,
-                CoefficientValue = 0.5f,
+                ExpSmoothAmount = 0.5f,
             };
             var controller = new AAPMAPlugin.LayerPass().Build(new[] { setting });
 
@@ -86,7 +86,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 Input1 = new AAPParameter { Parameter = "In", Min = 0.2f, Max = 0.8f },
                 Output = new AAPParameter { Parameter = "Out", Min = 0.2f, Max = 0.8f },
                 CoefficientUseParameter = false,
-                CoefficientValue = 0.5f,
+                ExpSmoothAmount = 0.5f,
             };
             var controller = new AAPMAPlugin.LayerPass().Build(new[] { setting });
 
@@ -107,7 +107,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 Input1 = new AAPParameter { Parameter = "In", Min = 0f, Max = 10f },
                 Output = new AAPParameter { Parameter = "Out", Min = 0f, Max = 10f },
                 CoefficientUseParameter = false,
-                CoefficientValue = 0.5f,
+                ExpSmoothAmount = 0.5f,
             };
             var controller = new AAPMAPlugin.LayerPass().Build(new[] { setting });
 
@@ -129,7 +129,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 Input1 = new AAPParameter { Parameter = "In", Min = 0f, Max = 10f },
                 Output = new AAPParameter { Parameter = "Out", Min = 0f, Max = 10f },
                 CoefficientUseParameter = false,
-                CoefficientValue = 0.5f,
+                ExpSmoothAmount = 0.5f,
             };
             var controller = new AAPMAPlugin.LayerPass().Build(new[] { setting });
 

@@ -23,7 +23,8 @@ namespace Narazaka.Unity.AAPMA
         public AAPParameter Input2;
         public AAPParameter Output;
         public bool CoefficientUseParameter;
-        public float CoefficientValue;
+        public float ExpSmoothAmount = 0.9f;
+        public float LinStepSize = 0.05f;
         public string CoefficientParameter;
     }
 }

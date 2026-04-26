@@ -283,7 +283,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 DrawExpression($"{OutputName} := lerp({Input1Name}, {OutputName}, {(string)T.SmoothAmount})");
                 MinMax(_input1);
                 Param(_output);
-                DrawCoefficient(T.SmoothAmount, withMaxField: false);
+                DrawCoefficient(T.SmoothAmount, nameof(AAPSetting.ExpSmoothAmount), withMaxField: false);
             }
 
             void LinearSmoothing()
@@ -291,24 +291,28 @@ namespace Narazaka.Unity.AAPMA.Editor
                 DrawExpression($"{OutputName} += clamp({Input1Name} - {OutputName}, -{(string)T.StepSize}, +{(string)T.StepSize})");
                 MinMax(_input1);
                 Param(_output);
-                DrawCoefficient(T.StepSize, withMaxField: true);
+                DrawCoefficient(T.StepSize, nameof(AAPSetting.LinStepSize), withMaxField: true);
             }
 
             void AssignCoefficientDefault(LogicType type)
             {
-                var value = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientValue));
-                if (value.floatValue != 0f) return;
                 switch (type)
                 {
-                    case LogicType.ExponentialSmoothing: value.floatValue = 0.9f; break;
-                    case LogicType.LinearSmoothing: value.floatValue = 0.05f; break;
+                    case LogicType.ExponentialSmoothing:
+                        var exp = _property.FindPropertyRelative(nameof(AAPSetting.ExpSmoothAmount));
+                        if (exp.floatValue == 0f) exp.floatValue = 0.9f;
+                        break;
+                    case LogicType.LinearSmoothing:
+                        var lin = _property.FindPropertyRelative(nameof(AAPSetting.LinStepSize));
+                        if (lin.floatValue == 0f) lin.floatValue = 0.05f;
+                        break;
                 }
             }
 
-            void DrawCoefficient(istring label, bool withMaxField)
+            void DrawCoefficient(istring label, string valuePropName, bool withMaxField)
             {
                 var useParam = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientUseParameter));
-                var value = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientValue));
+                var value = _property.FindPropertyRelative(valuePropName);
                 var paramName = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientParameter));
 
                 EditorGUI.PropertyField(line, useParam, new GUIContent($"{(string)label}: {(string)T.AsParameter}"));

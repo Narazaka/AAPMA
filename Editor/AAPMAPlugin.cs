@@ -240,7 +240,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 }
                 else
                 {
-                    smoothAmountSource = HiddenConst(setting.CoefficientValue);
+                    smoothAmountSource = HiddenConst(setting.ExpSmoothAmount);
                 }
 
                 var outer = New1D($"ExpSmooth {outputName}", smoothAmountSource, 0, innerA, 1, innerB);
@@ -253,7 +253,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 var outputName = setting.Output.Parameter;
                 var min = setting.Input1.Min;
                 var max = setting.Input1.Max;
-                var coef = setting.CoefficientValue;
+                var coef = setting.LinStepSize;
 
                 _parameters.Add(inputName);
                 _parameters.Add(outputName);
@@ -287,7 +287,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 }
                 else
                 {
-                    stepSizeSource = HiddenConst(setting.CoefficientValue);
+                    stepSizeSource = HiddenConst(setting.LinStepSize);
                 }
 
                 var root = NewDirect($"LinSmooth {outputName}", add =>
