@@ -22,5 +22,8 @@ namespace Narazaka.Unity.AAPMA
         public AAPParameter Input1;
         public AAPParameter Input2;
         public AAPParameter Output;
+        public bool CoefficientUseParameter;
+        public float CoefficientValue;
+        public string CoefficientParameter;
     }
 }
