@@ -96,6 +96,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     _type.enumValueIndex = newType;
+                    AssignCoefficientDefault((LogicType)newType);
                 }
                 EditorGUI.EndProperty();
                 NextLine();
@@ -291,6 +292,17 @@ namespace Narazaka.Unity.AAPMA.Editor
                 MinMax(_input1);
                 Param(_output);
                 DrawCoefficient(T.StepSize, withMaxField: true);
+            }
+
+            void AssignCoefficientDefault(LogicType type)
+            {
+                var value = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientValue));
+                if (value.floatValue != 0f) return;
+                switch (type)
+                {
+                    case LogicType.ExponentialSmoothing: value.floatValue = 0.9f; break;
+                    case LogicType.LinearSmoothing: value.floatValue = 0.05f; break;
+                }
             }
 
             void DrawCoefficient(istring label, bool withMaxField)
