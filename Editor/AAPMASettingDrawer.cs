@@ -315,22 +315,22 @@ namespace Narazaka.Unity.AAPMA.Editor
                 var value = _property.FindPropertyRelative(valuePropName);
                 var paramName = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientParameter));
 
-                EditorGUI.PropertyField(line, useParam, new GUIContent($"{(string)label}: {(string)T.AsParameter}"));
+                EditorGUI.PropertyField(line, useParam, new GUIContent($"{(string)label}: {(string)T.AsParameter}", label.Tooltip));
                 NextLine();
 
                 if (useParam.boolValue)
                 {
-                    EditorGUI.PropertyField(line, paramName, T.Parameter.GUIContent);
+                    EditorGUI.PropertyField(line, paramName, new GUIContent(T.Parameter, label.Tooltip));
                     NextLine();
                     if (withMaxField)
                     {
-                        EditorGUI.PropertyField(line, value, T.Max.GUIContent);
+                        EditorGUI.PropertyField(line, value, new GUIContent(T.Max, label.Tooltip));
                         NextLine();
                     }
                 }
                 else
                 {
-                    EditorGUI.PropertyField(line, value, T.Value.GUIContent);
+                    EditorGUI.PropertyField(line, value, new GUIContent(T.Value, label.Tooltip));
                     NextLine();
                 }
             }
@@ -363,8 +363,12 @@ namespace Narazaka.Unity.AAPMA.Editor
             public static istring Input1 = new istring("Input1", "入力1");
             public static istring Input2 = new istring("Input2", "入力2");
             public static istring Output = new istring("Output", "出力");
-            public static istring SmoothAmount = new istring("SmoothAmount", "平滑化量");
-            public static istring StepSize = new istring("StepSize", "ステップ幅");
+            public static istring SmoothAmount = new istring("SmoothAmount", "スムージング強度",
+                "Smoothing strength (0-1). Higher = smoother but slower tracking. 0 = instant, 1 = no movement.",
+                "スムージングの強さ (0〜1)。大きいほど滑らかになるが追従が遅くなる。0=即時追従、1=動かない");
+            public static istring StepSize = new istring("StepSize", "ステップ幅",
+                "Maximum amount Output moves toward Input per frame. Larger = faster catch-up. In parameter mode, the Max field is the upper bound.",
+                "1 フレームに Output が Input に向かって動く最大量。大きいほど速く追従する。パラメータモードでは Max フィールドが上限");
             public static istring AsParameter = new istring("as Parameter", "パラメータで指定");
             public static istring Value = new istring("Value", "値");
             public static istring Parameter = new istring("Parameter", "パラメータ");
