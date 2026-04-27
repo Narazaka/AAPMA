@@ -12,6 +12,10 @@ namespace Narazaka.Unity.AAPMA
         Multiplication,
         [IString("Division( ∕ )", "除算(÷)")]
         Division,
+        [IString("Exponential Smoothing", "指数スムージング")]
+        ExponentialSmoothing,
+        [IString("Linear Smoothing", "線形スムージング")]
+        LinearSmoothing,
         /*
         And,
         Or,

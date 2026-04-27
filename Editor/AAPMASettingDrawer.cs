@@ -96,6 +96,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     _type.enumValueIndex = newType;
+                    AssignCoefficientDefault((LogicType)newType);
                 }
                 EditorGUI.EndProperty();
                 NextLine();
@@ -116,6 +117,12 @@ namespace Narazaka.Unity.AAPMA.Editor
                         break;
                     case LogicType.Division:
                         Division();
+                        break;
+                    case LogicType.ExponentialSmoothing:
+                        ExponentialSmoothing();
+                        break;
+                    case LogicType.LinearSmoothing:
+                        LinearSmoothing();
                         break;
                 }
             }
@@ -271,6 +278,63 @@ namespace Narazaka.Unity.AAPMA.Editor
                 GUI.color = color;
             }
 
+            void ExponentialSmoothing()
+            {
+                DrawExpression($"{OutputName} := lerp({Input1Name}, {OutputName}, {(string)T.SmoothAmount})");
+                MinMax(_input1);
+                Param(_output);
+                DrawCoefficient(T.SmoothAmount, nameof(AAPSetting.ExpSmoothAmount), withMaxField: false);
+            }
+
+            void LinearSmoothing()
+            {
+                DrawExpression($"{OutputName} += clamp({Input1Name} - {OutputName}, -{(string)T.StepSize}, +{(string)T.StepSize})");
+                MinMax(_input1);
+                Param(_output);
+                DrawCoefficient(T.StepSize, nameof(AAPSetting.LinStepSize), withMaxField: true);
+            }
+
+            void AssignCoefficientDefault(LogicType type)
+            {
+                switch (type)
+                {
+                    case LogicType.ExponentialSmoothing:
+                        var exp = _property.FindPropertyRelative(nameof(AAPSetting.ExpSmoothAmount));
+                        if (exp.floatValue == 0f) exp.floatValue = 0.9f;
+                        break;
+                    case LogicType.LinearSmoothing:
+                        var lin = _property.FindPropertyRelative(nameof(AAPSetting.LinStepSize));
+                        if (lin.floatValue == 0f) lin.floatValue = 0.05f;
+                        break;
+                }
+            }
+
+            void DrawCoefficient(istring label, string valuePropName, bool withMaxField)
+            {
+                var useParam = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientUseParameter));
+                var value = _property.FindPropertyRelative(valuePropName);
+                var paramName = _property.FindPropertyRelative(nameof(AAPSetting.CoefficientParameter));
+
+                EditorGUI.PropertyField(line, useParam, new GUIContent($"{(string)label}: {(string)T.AsParameter}", label.Tooltip));
+                NextLine();
+
+                if (useParam.boolValue)
+                {
+                    EditorGUI.PropertyField(line, paramName, new GUIContent(T.Parameter, label.Tooltip));
+                    NextLine();
+                    if (withMaxField)
+                    {
+                        EditorGUI.PropertyField(line, value, new GUIContent(T.Max, label.Tooltip));
+                        NextLine();
+                    }
+                }
+                else
+                {
+                    EditorGUI.PropertyField(line, value, new GUIContent(T.Value, label.Tooltip));
+                    NextLine();
+                }
+            }
+
             void DrawExpression(string expression)
             {
                 var color = GUI.color;
@@ -299,6 +363,15 @@ namespace Narazaka.Unity.AAPMA.Editor
             public static istring Input1 = new istring("Input1", "入力1");
             public static istring Input2 = new istring("Input2", "入力2");
             public static istring Output = new istring("Output", "出力");
+            public static istring SmoothAmount = new istring("SmoothAmount", "スムージング強度",
+                "Smoothing strength (0-1). Higher = smoother but slower tracking. 0 = instant, 1 = no movement.",
+                "スムージングの強さ (0〜1)。大きいほど滑らかになるが追従が遅くなる。0=即時追従、1=動かない");
+            public static istring StepSize = new istring("StepSize", "ステップ幅",
+                "Maximum amount Output moves toward Input per frame. Larger = faster catch-up. In parameter mode, the Max field is the upper bound.",
+                "1 フレームに Output が Input に向かって動く最大量。大きいほど速く追従する。パラメータモードでは Max フィールドが上限");
+            public static istring AsParameter = new istring("as Parameter", "パラメータで指定");
+            public static istring Value = new istring("Value", "値");
+            public static istring Parameter = new istring("Parameter", "パラメータ");
         }
 
         class DrawerHeight : DrawerBase
@@ -331,6 +404,24 @@ namespace Narazaka.Unity.AAPMA.Editor
                         break;
                     case LogicType.Division:
                         height += LineHeight + ParamHeight + ParamValueHeight;
+                        break;
+                    case LogicType.ExponentialSmoothing:
+                        height += LineHeight;        // expression
+                        height += ParamValueHeight;  // input + Min/Max
+                        height += ParamHeight;       // output
+                        height += LineHeight;        // checkbox
+                        height += LineHeight;        // value or paramName
+                        break;
+                    case LogicType.LinearSmoothing:
+                        height += LineHeight;        // expression
+                        height += ParamValueHeight;  // input + Min/Max
+                        height += ParamHeight;       // output
+                        height += LineHeight;        // checkbox
+                        height += LineHeight;        // value or paramName
+                        if (_property.FindPropertyRelative(nameof(AAPSetting.CoefficientUseParameter)).boolValue)
+                        {
+                            height += LineHeight;    // Max field (parametric mode only)
+                        }
                         break;
                 }
 

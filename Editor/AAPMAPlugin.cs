@@ -8,6 +8,7 @@ using nadena.dev.modular_avatar.core;
 using UnityEditor;
 
 [assembly: ExportsPlugin(typeof(Narazaka.Unity.AAPMA.Editor.AAPMAPlugin))]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Narazaka.Unity.AAPMA.Editor.Tests")]
 
 namespace Narazaka.Unity.AAPMA.Editor
 {
@@ -28,7 +29,12 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             foreach (var pair in settingsByLayer)
             {
-                new LayerPass().PassLayer(ctx, pair.Key, pair.Value);
+                var animator = new LayerPass().Build(pair.Value);
+                if (animator == null) continue;
+                var mergeAnimator = ctx.AvatarRootObject.AddComponent<ModularAvatarMergeAnimator>();
+                mergeAnimator.animator = animator;
+                mergeAnimator.layerType = pair.Key;
+                mergeAnimator.matchAvatarWriteDefaults = false;
             }
 
             foreach (var aapma in aapmas)
@@ -37,16 +43,31 @@ namespace Narazaka.Unity.AAPMA.Editor
             }
         }
 
-        class LayerPass
+        internal class LayerPass
         {
             static string OneParameter = "__AAPMA__OneParameter__";
             List<string> _parameters = new List<string>();
             List<AnimatorControllerLayer> _layers = new List<AnimatorControllerLayer>();
             List<ChildMotion> _childMotions = new List<ChildMotion>();
+            Dictionary<float, string> _hiddenConsts = new Dictionary<float, string>();
+            int _linDeltaCounter = 0;
 
-            public void PassLayer(BuildContext ctx, VRC.SDK3.Avatars.Components.VRCAvatarDescriptor.AnimLayerType layerType, AAPSetting[] settings)
+            string NewLinDeltaName() => $"__AAPMA__LinDelta_{_linDeltaCounter++}__";
+
+            string HiddenConst(float value)
             {
-                if (settings.Length == 0) return;
+                if (!_hiddenConsts.TryGetValue(value, out var name))
+                {
+                    name = $"__AAPMA__Const_{value:G9}__"
+                        .Replace('.', '_').Replace('-', 'm').Replace('+', 'p').Replace('E', 'e');
+                    _hiddenConsts.Add(value, name);
+                }
+                return name;
+            }
+
+            public AnimatorController Build(AAPSetting[] settings)
+            {
+                if (settings.Length == 0) return null;
 
                 foreach (var setting in settings)
                 {
@@ -76,12 +97,15 @@ namespace Narazaka.Unity.AAPMA.Editor
                         defaultFloat = 1,
                     },
                     })
+                    .Concat(_hiddenConsts.Select(kv => new AnimatorControllerParameter
+                    {
+                        name = kv.Value,
+                        type = AnimatorControllerParameterType.Float,
+                        defaultFloat = kv.Key,
+                    }))
                     .ToArray(),
                 };
-                var mergeAnimator = ctx.AvatarRootObject.AddComponent<ModularAvatarMergeAnimator>();
-                mergeAnimator.animator = animator;
-                mergeAnimator.layerType = layerType;
-                mergeAnimator.matchAvatarWriteDefaults = false;
+                return animator;
             }
 
             void ProcessSetting(AAPSetting setting)
@@ -102,6 +126,12 @@ namespace Narazaka.Unity.AAPMA.Editor
                         break;
                     case LogicType.Division:
                         Division(setting);
+                        break;
+                    case LogicType.ExponentialSmoothing:
+                        ExponentialSmoothing(setting);
+                        break;
+                    case LogicType.LinearSmoothing:
+                        LinearSmoothing(setting);
                         break;
                 }
             }
@@ -186,24 +216,108 @@ namespace Narazaka.Unity.AAPMA.Editor
                 AddLayerForMotion(direct);
             }
 
+            void ExponentialSmoothing(AAPSetting setting)
+            {
+                var inputName = setting.Input1.Parameter;
+                var outputName = setting.Output.Parameter;
+                var min = setting.Input1.Min;
+                var max = setting.Input1.Max;
+
+                _parameters.Add(inputName);
+                _parameters.Add(outputName);
+
+                var minClip = NewClip(outputName, min);
+                var maxClip = NewClip(outputName, max);
+
+                var innerA = New1D($"{outputName} := {inputName}", inputName, min, minClip, max, maxClip);
+                var innerB = New1D($"{outputName} := {outputName}", outputName, min, minClip, max, maxClip);
+
+                string smoothAmountSource;
+                if (setting.CoefficientUseParameter)
+                {
+                    smoothAmountSource = setting.CoefficientParameter;
+                    _parameters.Add(smoothAmountSource);
+                }
+                else
+                {
+                    smoothAmountSource = HiddenConst(setting.ExpSmoothAmount);
+                }
+
+                var outer = New1D($"ExpSmooth {outputName}", smoothAmountSource, 0, innerA, 1, innerB);
+                AddLayerForMotion(outer, writeDefaultValues: false);
+            }
+
+            void LinearSmoothing(AAPSetting setting)
+            {
+                var inputName = setting.Input1.Parameter;
+                var outputName = setting.Output.Parameter;
+                var min = setting.Input1.Min;
+                var max = setting.Input1.Max;
+                var coef = setting.LinStepSize;
+
+                _parameters.Add(inputName);
+                _parameters.Add(outputName);
+
+                var deltaName = NewLinDeltaName();
+                _parameters.Add(deltaName);
+
+                var deltaInput = New1D($"Delta := {inputName}", inputName,
+                    min, NewClip(deltaName, min),
+                    max, NewClip(deltaName, max));
+
+                var deltaMinusOutput = New1D($"Delta := -{outputName}", outputName,
+                    min, NewClip(deltaName, -min),
+                    max, NewClip(deltaName, -max));
+
+                var outputSelf = New1D($"{outputName} := {outputName}", outputName,
+                    min, NewClip(outputName, min),
+                    max, NewClip(outputName, max));
+
+                var linearBlend = New1DTriple($"clamp({inputName}-{outputName}, ±{coef})",
+                    deltaName,
+                    -coef, NewClip(outputName, -1f),
+                    0f,    NewClip(outputName, 0f),
+                    +coef, NewClip(outputName, +1f));
+
+                string stepSizeSource;
+                if (setting.CoefficientUseParameter)
+                {
+                    stepSizeSource = setting.CoefficientParameter;
+                    _parameters.Add(stepSizeSource);
+                }
+                else
+                {
+                    stepSizeSource = HiddenConst(setting.LinStepSize);
+                }
+
+                var root = NewDirect($"LinSmooth {outputName}", add =>
+                {
+                    add(OneParameter, deltaInput);
+                    add(OneParameter, deltaMinusOutput);
+                    add(OneParameter, outputSelf);
+                    add(stepSizeSource, linearBlend);
+                });
+                AddLayerForMotion(root, writeDefaultValues: true);
+            }
+
             void AddChildMotion(string parameter, Motion motion)
             {
                 _childMotions.Add(new ChildMotion { motion = motion, directBlendParameter = parameter });
             }
 
-            void AddLayerForMotion(Motion motion)
+            void AddLayerForMotion(Motion motion, bool writeDefaultValues = true)
             {
-                _layers.Add(MakeLayerForMotion(motion));
+                _layers.Add(MakeLayerForMotion(motion, writeDefaultValues));
             }
 
-            AnimatorControllerLayer MakeLayerForMotion(Motion motion)
+            AnimatorControllerLayer MakeLayerForMotion(Motion motion, bool writeDefaultValues = true)
             {
                 var state = new AnimatorState
                 {
                     name = motion.name,
                     hideFlags = HideFlags.HideInHierarchy,
                     motion = motion,
-                    writeDefaultValues = true,
+                    writeDefaultValues = writeDefaultValues,
                 };
                 var stateMachine = new AnimatorStateMachine
                 {
@@ -252,6 +366,19 @@ namespace Narazaka.Unity.AAPMA.Editor
             BlendTree New1D(string name, string parameter, Motion start, Motion end)
             {
                 return New1D(name, parameter, 0, start, 1, end);
+            }
+
+            BlendTree New1DTriple(string name, string parameter,
+                float t0, Motion m0, float t1, Motion m1, float t2, Motion m2)
+            {
+                var bt = New1D(name, parameter);
+                bt.children = new[]
+                {
+                    new ChildMotion { motion = m0, threshold = t0 },
+                    new ChildMotion { motion = m1, threshold = t1 },
+                    new ChildMotion { motion = m2, threshold = t2 },
+                };
+                return bt;
             }
 
             BlendTree NewDirect(string name)

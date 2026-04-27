@@ -8,12 +8,22 @@ namespace Narazaka.Unity.AAPMA
     {
         public string en;
         public string ja;
+        public string tooltipEn;
+        public string tooltipJa;
         public istring(string en, string ja)
         {
             this.en = en;
             this.ja = ja;
         }
-        public GUIContent GUIContent => new GUIContent(this);
+        public istring(string en, string ja, string tooltipEn, string tooltipJa)
+        {
+            this.en = en;
+            this.ja = ja;
+            this.tooltipEn = tooltipEn;
+            this.tooltipJa = tooltipJa;
+        }
+        public string Tooltip => IsJa ? tooltipJa : tooltipEn;
+        public GUIContent GUIContent => new GUIContent(this, Tooltip);
 
         public static implicit operator string(istring data) => IsJa ? data.ja : data.en;
 
