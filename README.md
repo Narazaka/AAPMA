@@ -23,6 +23,7 @@ https://github.com/Narazaka/AAPMA/releases/latest から `net.narazaka.vrchat.aa
 
 ## Changelog
 
+- 0.2.0-beta.1: Smooth local/remote 追加
 - 0.2.0-beta.0: Logic Gate / Smooth 追加
 
 ## License
