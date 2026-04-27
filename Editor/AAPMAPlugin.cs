@@ -48,7 +48,6 @@ namespace Narazaka.Unity.AAPMA.Editor
             static string OneParameter = "__AAPMA__OneParameter__";
             static string IsLocalParameter = "IsLocal";
             List<string> _parameters = new List<string>();
-            HashSet<string> _boolParameters = new HashSet<string>();
 
             void EnsureIsLocalParameter()
             {
@@ -93,11 +92,8 @@ namespace Narazaka.Unity.AAPMA.Editor
                     parameters = _parameters.Select(p => new AnimatorControllerParameter
                     {
                         name = p,
-                        type = _boolParameters.Contains(p)
-                            ? AnimatorControllerParameterType.Bool
-                            : AnimatorControllerParameterType.Float,
+                        type = AnimatorControllerParameterType.Float,
                         defaultFloat = 0,
-                        defaultBool = false,
                     })
                     .Concat(new AnimatorControllerParameter[]
                     {
