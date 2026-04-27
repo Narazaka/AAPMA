@@ -34,7 +34,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 var mergeAnimator = ctx.AvatarRootObject.AddComponent<ModularAvatarMergeAnimator>();
                 mergeAnimator.animator = animator;
                 mergeAnimator.layerType = pair.Key;
-                mergeAnimator.matchAvatarWriteDefaults = false;
+                mergeAnimator.matchAvatarWriteDefaults = true;
             }
 
             foreach (var aapma in aapmas)
