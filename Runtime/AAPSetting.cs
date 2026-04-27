@@ -30,5 +30,6 @@ namespace Narazaka.Unity.AAPMA
         public float ExpSmoothAmount = 0.9f;
         public float LinStepSize = 0.05f;
         public string CoefficientParameter;
+        public SmoothingTarget SmoothingTarget;
     }
 }
