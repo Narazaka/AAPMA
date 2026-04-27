@@ -42,9 +42,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - unity: 2022.3.6f1
+          - unity: 2022.3.22f1
             ma: 1.8.0
-            vrcsdk-version: 3.5.2
+            vrcsdk-version: 3.2.0
           - unity: 2022.3.22f1
             ma: 1.16.2
             vrcsdk-version: 3.10.3
