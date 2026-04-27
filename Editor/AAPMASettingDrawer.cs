@@ -308,7 +308,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void AndGate()
             {
-                DrawExpression($"{OutputName} := {Input1Name} AND {Input2Name}");
+                DrawExpression($"{OutputName} := {Input1Name} && {Input2Name}");
                 Param(_input1);
                 Param(_input2);
                 Param(_output);
@@ -316,7 +316,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void OrGate()
             {
-                DrawExpression($"{OutputName} := {Input1Name} OR {Input2Name}");
+                DrawExpression($"{OutputName} := {Input1Name} || {Input2Name}");
                 Param(_input1);
                 Param(_input2);
                 Param(_output);
@@ -324,7 +324,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void NotGate()
             {
-                DrawExpression($"{OutputName} := NOT {Input1Name}");
+                DrawExpression($"{OutputName} := !{Input1Name}");
                 Param(_input1);
                 Param(_output);
             }
