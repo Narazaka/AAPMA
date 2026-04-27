@@ -21,6 +21,10 @@ https://github.com/Narazaka/AAPMA/releases/latest から `net.narazaka.vrchat.aa
 
 `AAPMA` を Add Component して設定します。
 
+## Changelog
+
+- 0.2.0-beta.0: Logic Gate / Smooth 追加
+
 ## License
 
 [Zlib License](LICENSE.txt)
