@@ -6,7 +6,8 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
 {
     public class LinearSmoothingTests
     {
-        static AAPSetting Make(float coef, bool asParam = false, string paramName = null) =>
+        static AAPSetting Make(float coef, bool asParam = false, string paramName = null,
+            SmoothingTarget target = SmoothingTarget.Both) =>
             new AAPSetting
             {
                 Type = LogicType.LinearSmoothing,
@@ -15,6 +16,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 CoefficientUseParameter = asParam,
                 LinStepSize = coef,
                 CoefficientParameter = paramName,
+                SmoothingTarget = target,
             };
 
         [Test]
@@ -135,6 +137,66 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
             ev.Step(200);
 
             Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.05f));
+        }
+
+        [Test]
+        public void LocalOnly_LocalSide_Smooths()
+        {
+            var s = Make(0.1f, asParam: true, paramName: "Step", target: SmoothingTarget.LocalOnly);
+            var controller = new AAPMAPlugin.LayerPass().Build(new[] { s });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetBool("IsLocal", true);
+            ev.SetFloat("Step", 0.02f);
+            ev.SetFloat("In", 1f);
+            ev.Step(500);
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.01f));
+        }
+
+        [Test]
+        public void LocalOnly_RemoteSide_PassesThrough()
+        {
+            var s = Make(0.1f, asParam: true, paramName: "Step", target: SmoothingTarget.LocalOnly);
+            var controller = new AAPMAPlugin.LayerPass().Build(new[] { s });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetBool("IsLocal", false);
+            ev.SetFloat("Step", 0.02f);
+            ev.SetFloat("In", 1f);
+            ev.Step(2);
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.001f));
+        }
+
+        [Test]
+        public void RemoteOnly_RemoteSide_Smooths()
+        {
+            var s = Make(0.1f, asParam: true, paramName: "Step", target: SmoothingTarget.RemoteOnly);
+            var controller = new AAPMAPlugin.LayerPass().Build(new[] { s });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetBool("IsLocal", false);
+            ev.SetFloat("Step", 0.02f);
+            ev.SetFloat("In", 1f);
+            ev.Step(500);
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.01f));
+        }
+
+        [Test]
+        public void RemoteOnly_LocalSide_PassesThrough()
+        {
+            var s = Make(0.1f, asParam: true, paramName: "Step", target: SmoothingTarget.RemoteOnly);
+            var controller = new AAPMAPlugin.LayerPass().Build(new[] { s });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetBool("IsLocal", true);
+            ev.SetFloat("Step", 0.02f);
+            ev.SetFloat("In", 1f);
+            ev.Step(2);
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.001f));
         }
     }
 }

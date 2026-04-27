@@ -333,7 +333,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                     add(OneParameter, outputSelf);
                     add(stepSizeSource, linearBlend);
                 });
-                AddLayerForMotion(root, writeDefaultValues: true);
+                AddLayerForMotion(WrapWithIsLocal(setting, root), writeDefaultValues: true);
             }
 
             void AndGate(AAPSetting setting)
