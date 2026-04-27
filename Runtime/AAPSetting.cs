@@ -22,6 +22,10 @@ namespace Narazaka.Unity.AAPMA
         public AAPParameter Input1;
         public AAPParameter Input2;
         public AAPParameter Output;
+        public float LogicTruth00 = 0f;
+        public float LogicTruth01 = 1f;
+        public float LogicTruth10 = 1f;
+        public float LogicTruth11 = 0f;
         public bool CoefficientUseParameter;
         public float ExpSmoothAmount = 0.9f;
         public float LinStepSize = 0.05f;

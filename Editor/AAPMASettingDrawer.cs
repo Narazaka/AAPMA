@@ -124,6 +124,18 @@ namespace Narazaka.Unity.AAPMA.Editor
                     case LogicType.LinearSmoothing:
                         LinearSmoothing();
                         break;
+                    case LogicType.Arbitrary2Bit:
+                        Arbitrary2BitGate();
+                        break;
+                    case LogicType.And:
+                        AndGate();
+                        break;
+                    case LogicType.Or:
+                        OrGate();
+                        break;
+                    case LogicType.Not:
+                        NotGate();
+                        break;
                 }
             }
 
@@ -144,7 +156,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void Addition()
             {
-                DrawExpression($"{OutputName} = {Input1Name} + {Input2Name}");
+                DrawExpression($"{OutputName} := {Input1Name} + {Input2Name}");
                 DrawUse1D();
                 if (Use1D)
                 {
@@ -162,7 +174,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void Subtraction()
             {
-                DrawExpression($"{OutputName} = {Input1Name} - {Input2Name}");
+                DrawExpression($"{OutputName} := {Input1Name} - {Input2Name}");
                 DrawUse1D();
                 if (Use1D)
                 {
@@ -180,7 +192,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void Multiplication()
             {
-                DrawExpression($"{OutputName} = {Input1Name} * {Input2Name}");
+                DrawExpression($"{OutputName} := {Input1Name} * {Input2Name}");
                 DrawUse1D();
                 if (Use1D)
                 {
@@ -197,7 +209,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void Division()
             {
-                DrawExpression($"{OutputName} = {_output.Max.floatValue} / (1 + {Input1Name})");
+                DrawExpression($"{OutputName} := {_output.Max.floatValue} / (1 + {Input1Name})");
                 ParamPositive(_input1);
                 ZeroMax(_output);
             }
@@ -294,6 +306,77 @@ namespace Narazaka.Unity.AAPMA.Editor
                 DrawCoefficient(T.StepSize, nameof(AAPSetting.LinStepSize), withMaxField: true);
             }
 
+            void AndGate()
+            {
+                DrawExpression($"{OutputName} := {Input1Name} AND {Input2Name}");
+                Param(_input1);
+                Param(_input2);
+                Param(_output);
+            }
+
+            void OrGate()
+            {
+                DrawExpression($"{OutputName} := {Input1Name} OR {Input2Name}");
+                Param(_input1);
+                Param(_input2);
+                Param(_output);
+            }
+
+            void NotGate()
+            {
+                DrawExpression($"{OutputName} := NOT {Input1Name}");
+                Param(_input1);
+                Param(_output);
+            }
+
+            void Arbitrary2BitGate()
+            {
+                DrawExpression($"{OutputName} := TruthTable[{Input1Name}][{Input2Name}]");
+                Param(_input1);
+                Param(_input2);
+                Param(_output);
+                DrawTruthValue(nameof(AAPSetting.LogicTruth00), T.TruthA0B0);
+                DrawTruthValue(nameof(AAPSetting.LogicTruth01), T.TruthA0B1);
+                DrawTruthValue(nameof(AAPSetting.LogicTruth10), T.TruthA1B0);
+                DrawTruthValue(nameof(AAPSetting.LogicTruth11), T.TruthA1B1);
+                DrawPresetButtons();
+            }
+
+            void DrawTruthValue(string propertyName, istring label)
+            {
+                var prop = _property.FindPropertyRelative(propertyName);
+                EditorGUI.PropertyField(line, prop, label.GUIContent);
+                NextLine();
+            }
+
+            void DrawPresetButtons()
+            {
+                var rect = line;
+                var labelWidth = EditorGUIUtility.labelWidth;
+                EditorGUI.LabelField(new Rect(rect.x, rect.y, labelWidth, rect.height), T.Presets);
+
+                var buttonsArea = new Rect(rect.x + labelWidth, rect.y, rect.width - labelWidth, rect.height);
+                var buttonWidth = buttonsArea.width / 4f;
+                DrawPresetButton(buttonsArea, 0, buttonWidth, "XOR", 0f, 1f, 1f, 0f);
+                DrawPresetButton(buttonsArea, 1, buttonWidth, "NAND", 1f, 1f, 1f, 0f);
+                DrawPresetButton(buttonsArea, 2, buttonWidth, "NOR", 1f, 0f, 0f, 0f);
+                DrawPresetButton(buttonsArea, 3, buttonWidth, "XNOR", 1f, 0f, 0f, 1f);
+                NextLine();
+            }
+
+            void DrawPresetButton(Rect area, int index, float width, string label,
+                float t00, float t01, float t10, float t11)
+            {
+                var rect = new Rect(area.x + width * index, area.y, width, area.height);
+                if (GUI.Button(rect, label))
+                {
+                    _property.FindPropertyRelative(nameof(AAPSetting.LogicTruth00)).floatValue = t00;
+                    _property.FindPropertyRelative(nameof(AAPSetting.LogicTruth01)).floatValue = t01;
+                    _property.FindPropertyRelative(nameof(AAPSetting.LogicTruth10)).floatValue = t10;
+                    _property.FindPropertyRelative(nameof(AAPSetting.LogicTruth11)).floatValue = t11;
+                }
+            }
+
             void AssignCoefficientDefault(LogicType type)
             {
                 switch (type)
@@ -305,6 +388,20 @@ namespace Narazaka.Unity.AAPMA.Editor
                     case LogicType.LinearSmoothing:
                         var lin = _property.FindPropertyRelative(nameof(AAPSetting.LinStepSize));
                         if (lin.floatValue == 0f) lin.floatValue = 0.05f;
+                        break;
+                    case LogicType.Arbitrary2Bit:
+                        var t00 = _property.FindPropertyRelative(nameof(AAPSetting.LogicTruth00));
+                        var t01 = _property.FindPropertyRelative(nameof(AAPSetting.LogicTruth01));
+                        var t10 = _property.FindPropertyRelative(nameof(AAPSetting.LogicTruth10));
+                        var t11 = _property.FindPropertyRelative(nameof(AAPSetting.LogicTruth11));
+                        if (t00.floatValue == 0f && t01.floatValue == 0f && t10.floatValue == 0f && t11.floatValue == 0f)
+                        {
+                            // 全 0 状態（zero-init）なら XOR を初期値として書き込む
+                            t00.floatValue = 0f;
+                            t01.floatValue = 1f;
+                            t10.floatValue = 1f;
+                            t11.floatValue = 0f;
+                        }
                         break;
                 }
             }
@@ -372,6 +469,11 @@ namespace Narazaka.Unity.AAPMA.Editor
             public static istring AsParameter = new istring("as Parameter", "パラメータで指定");
             public static istring Value = new istring("Value", "値");
             public static istring Parameter = new istring("Parameter", "パラメータ");
+            public static istring TruthA0B0 = new istring("A=0, B=0", "A=0, B=0");
+            public static istring TruthA0B1 = new istring("A=0, B=1", "A=0, B=1");
+            public static istring TruthA1B0 = new istring("A=1, B=0", "A=1, B=0");
+            public static istring TruthA1B1 = new istring("A=1, B=1", "A=1, B=1");
+            public static istring Presets = new istring("Presets", "プリセット");
         }
 
         class DrawerHeight : DrawerBase
@@ -422,6 +524,21 @@ namespace Narazaka.Unity.AAPMA.Editor
                         {
                             height += LineHeight;    // Max field (parametric mode only)
                         }
+                        break;
+                    case LogicType.And:
+                    case LogicType.Or:
+                        height += LineHeight;        // expression
+                        height += ParamHeight * 3;   // input1, input2, output
+                        break;
+                    case LogicType.Not:
+                        height += LineHeight;        // expression
+                        height += ParamHeight * 2;   // input1, output
+                        break;
+                    case LogicType.Arbitrary2Bit:
+                        height += LineHeight;        // expression
+                        height += ParamHeight * 3;   // input1, input2, output
+                        height += LineHeight * 4;    // 4 truth values
+                        height += LineHeight;        // presets
                         break;
                 }
 
