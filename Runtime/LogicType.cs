@@ -16,11 +16,13 @@ namespace Narazaka.Unity.AAPMA
         ExponentialSmoothing,
         [IString("Linear Smoothing", "線形スムージング")]
         LinearSmoothing,
-        /*
-        And,
-        Or,
-        Not,
+        [IString("Arbitrary 2-Bit Gate", "任意 2-bit ゲート")]
         Arbitrary2Bit,
-        */
+        [IString("AND Gate", "AND ゲート")]
+        And,
+        [IString("OR Gate", "OR ゲート")]
+        Or,
+        [IString("NOT Gate", "NOT ゲート")]
+        Not,
     }
 }
