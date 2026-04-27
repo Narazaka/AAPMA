@@ -24,6 +24,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
         }
 
         public void SetFloat(string name, float value) => _animator.SetFloat(name, value);
+        public void SetBool(string name, bool value) => _animator.SetBool(name, value);
         public float GetFloat(string name) => _animator.GetFloat(name);
 
         /// <summary>1 フレーム = 1/60 秒で n フレーム進める。</summary>
