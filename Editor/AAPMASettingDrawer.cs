@@ -156,7 +156,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void Addition()
             {
-                DrawExpression($"{OutputName} = {Input1Name} + {Input2Name}");
+                DrawExpression($"{OutputName} := {Input1Name} + {Input2Name}");
                 DrawUse1D();
                 if (Use1D)
                 {
@@ -174,7 +174,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void Subtraction()
             {
-                DrawExpression($"{OutputName} = {Input1Name} - {Input2Name}");
+                DrawExpression($"{OutputName} := {Input1Name} - {Input2Name}");
                 DrawUse1D();
                 if (Use1D)
                 {
@@ -192,7 +192,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void Multiplication()
             {
-                DrawExpression($"{OutputName} = {Input1Name} * {Input2Name}");
+                DrawExpression($"{OutputName} := {Input1Name} * {Input2Name}");
                 DrawUse1D();
                 if (Use1D)
                 {
@@ -209,7 +209,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void Division()
             {
-                DrawExpression($"{OutputName} = {_output.Max.floatValue} / (1 + {Input1Name})");
+                DrawExpression($"{OutputName} := {_output.Max.floatValue} / (1 + {Input1Name})");
                 ParamPositive(_input1);
                 ZeroMax(_output);
             }
@@ -331,7 +331,7 @@ namespace Narazaka.Unity.AAPMA.Editor
 
             void Arbitrary2BitGate()
             {
-                DrawExpression($"{OutputName} = TruthTable[{Input1Name}][{Input2Name}]");
+                DrawExpression($"{OutputName} := TruthTable[{Input1Name}][{Input2Name}]");
                 Param(_input1);
                 Param(_input2);
                 Param(_output);

@@ -18,11 +18,11 @@ namespace Narazaka.Unity.AAPMA
         LinearSmoothing,
         [IString("Arbitrary 2-Bit Gate", "任意 2-bit ゲート")]
         Arbitrary2Bit,
-        [IString("AND Gate", "AND ゲート")]
+        [IString("AND (&&)", "AND (&&)")]
         And,
-        [IString("OR Gate", "OR ゲート")]
+        [IString("OR (||)", "OR (||)")]
         Or,
-        [IString("NOT Gate", "NOT ゲート")]
+        [IString("NOT (!)", "NOT (!)")]
         Not,
     }
 }
