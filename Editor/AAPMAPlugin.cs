@@ -142,6 +142,9 @@ namespace Narazaka.Unity.AAPMA.Editor
                     case LogicType.Not:
                         NotGate(setting);
                         break;
+                    case LogicType.Arbitrary2Bit:
+                        Arbitrary2BitGate(setting);
+                        break;
                 }
             }
 
@@ -358,6 +361,27 @@ namespace Narazaka.Unity.AAPMA.Editor
 
                 var bt = New1D($"NOT {outputName}", inputName, 0f, clip1, 1f, clip0);
                 AddLayerForMotion(bt, writeDefaultValues: false);
+            }
+
+            void Arbitrary2BitGate(AAPSetting setting)
+            {
+                var inputAName = setting.Input1.Parameter;
+                var inputBName = setting.Input2.Parameter;
+                var outputName = setting.Output.Parameter;
+
+                _parameters.Add(inputAName);
+                _parameters.Add(inputBName);
+                _parameters.Add(outputName);
+
+                var clip00 = NewClip(outputName, setting.LogicTruth00);
+                var clip01 = NewClip(outputName, setting.LogicTruth01);
+                var clip10 = NewClip(outputName, setting.LogicTruth10);
+                var clip11 = NewClip(outputName, setting.LogicTruth11);
+
+                var innerA0 = New1D($"Arb2Bit A=0 {outputName}", inputBName, 0f, clip00, 1f, clip01);
+                var innerA1 = New1D($"Arb2Bit A=1 {outputName}", inputBName, 0f, clip10, 1f, clip11);
+                var outer = New1D($"Arb2Bit {outputName}", inputAName, 0f, innerA0, 1f, innerA1);
+                AddLayerForMotion(outer, writeDefaultValues: false);
             }
 
             void AddChildMotion(string parameter, Motion motion)
