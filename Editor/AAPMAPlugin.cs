@@ -46,7 +46,15 @@ namespace Narazaka.Unity.AAPMA.Editor
         internal class LayerPass
         {
             static string OneParameter = "__AAPMA__OneParameter__";
+            static string IsLocalParameter = "IsLocal";
             List<string> _parameters = new List<string>();
+            HashSet<string> _boolParameters = new HashSet<string>();
+
+            void EnsureIsLocalParameter()
+            {
+                if (_parameters.Contains(IsLocalParameter)) return;
+                _parameters.Add(IsLocalParameter);
+            }
             List<AnimatorControllerLayer> _layers = new List<AnimatorControllerLayer>();
             List<ChildMotion> _childMotions = new List<ChildMotion>();
             Dictionary<float, string> _hiddenConsts = new Dictionary<float, string>();
@@ -85,8 +93,11 @@ namespace Narazaka.Unity.AAPMA.Editor
                     parameters = _parameters.Select(p => new AnimatorControllerParameter
                     {
                         name = p,
-                        type = AnimatorControllerParameterType.Float,
+                        type = _boolParameters.Contains(p)
+                            ? AnimatorControllerParameterType.Bool
+                            : AnimatorControllerParameterType.Float,
                         defaultFloat = 0,
+                        defaultBool = false,
                     })
                     .Concat(new AnimatorControllerParameter[]
                     {
@@ -106,6 +117,23 @@ namespace Narazaka.Unity.AAPMA.Editor
                     .ToArray(),
                 };
                 return animator;
+            }
+
+            Motion WrapWithIsLocal(AAPSetting setting, Motion smoother)
+            {
+                if (setting.SmoothingTarget == SmoothingTarget.Both) return smoother;
+
+                EnsureIsLocalParameter();
+
+                var inputName = setting.Input1.Parameter;
+                var outputName = setting.Output.Parameter;
+                var passthrough = New1D($"Passthrough {outputName}", inputName,
+                    setting.Input1.Min, NewClip(outputName, setting.Input1.Min),
+                    setting.Input1.Max, NewClip(outputName, setting.Input1.Max));
+
+                return setting.SmoothingTarget == SmoothingTarget.LocalOnly
+                    ? New1D($"LocalOnly {outputName}",  IsLocalParameter, 0, passthrough, 1, smoother)
+                    : New1D($"RemoteOnly {outputName}", IsLocalParameter, 0, smoother,    1, passthrough);
             }
 
             void ProcessSetting(AAPSetting setting)
@@ -256,7 +284,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 }
 
                 var outer = New1D($"ExpSmooth {outputName}", smoothAmountSource, 0, innerA, 1, innerB);
-                AddLayerForMotion(outer, writeDefaultValues: false);
+                AddLayerForMotion(WrapWithIsLocal(setting, outer), writeDefaultValues: false);
             }
 
             void LinearSmoothing(AAPSetting setting)

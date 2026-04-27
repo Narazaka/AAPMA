@@ -6,7 +6,8 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
 {
     public class ExponentialSmoothingTests
     {
-        static AAPSetting Make(float smoothAmount, bool asParam = false, string paramName = null) =>
+        static AAPSetting Make(float smoothAmount, bool asParam = false, string paramName = null,
+            SmoothingTarget target = SmoothingTarget.Both) =>
             new AAPSetting
             {
                 Type = LogicType.ExponentialSmoothing,
@@ -15,6 +16,7 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
                 CoefficientUseParameter = asParam,
                 ExpSmoothAmount = smoothAmount,
                 CoefficientParameter = paramName,
+                SmoothingTarget = target,
             };
 
         [Test]
@@ -138,6 +140,62 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
             ev.Step(50);
 
             Assert.That(ev.GetFloat("Out"), Is.EqualTo(10f).Within(0.01f));
+        }
+
+        [Test]
+        public void LocalOnly_LocalSide_Smooths()
+        {
+            var controller = new AAPMAPlugin.LayerPass().Build(
+                new[] { Make(0.5f, target: SmoothingTarget.LocalOnly) });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetBool("IsLocal", true);
+            ev.SetFloat("In", 1f);
+            ev.Step(50);
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.001f));
+        }
+
+        [Test]
+        public void LocalOnly_RemoteSide_PassesThrough()
+        {
+            var controller = new AAPMAPlugin.LayerPass().Build(
+                new[] { Make(0.5f, target: SmoothingTarget.LocalOnly) });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetBool("IsLocal", false);
+            ev.SetFloat("In", 1f);
+            ev.Step(2); // パススルーは Remap と同型なので 2 frame で完全一致
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.001f));
+        }
+
+        [Test]
+        public void RemoteOnly_RemoteSide_Smooths()
+        {
+            var controller = new AAPMAPlugin.LayerPass().Build(
+                new[] { Make(0.5f, target: SmoothingTarget.RemoteOnly) });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetBool("IsLocal", false);
+            ev.SetFloat("In", 1f);
+            ev.Step(50);
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.001f));
+        }
+
+        [Test]
+        public void RemoteOnly_LocalSide_PassesThrough()
+        {
+            var controller = new AAPMAPlugin.LayerPass().Build(
+                new[] { Make(0.5f, target: SmoothingTarget.RemoteOnly) });
+
+            using var ev = new AnimatorEvaluator(controller);
+            ev.SetBool("IsLocal", true);
+            ev.SetFloat("In", 1f);
+            ev.Step(2);
+
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.001f));
         }
     }
 }
