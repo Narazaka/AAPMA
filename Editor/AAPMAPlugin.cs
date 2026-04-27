@@ -46,6 +46,9 @@ namespace Narazaka.Unity.AAPMA.Editor
         internal class LayerPass
         {
             static string OneParameter = "__AAPMA__OneParameter__";
+            // Float で宣言する（Bool ではない）: Unity の 1D BlendTree blendParameter は Float 必須。
+            // avatar 既存の Bool IsLocal は MA/NDMF が build 時に Float に Force-promote し、
+            // 関連 transition (If/IfNot) も自動的に Greater(0.5)/Less(0.5) に書き換えるので整合する。
             static string IsLocalParameter = "IsLocal";
             List<string> _parameters = new List<string>();
 
