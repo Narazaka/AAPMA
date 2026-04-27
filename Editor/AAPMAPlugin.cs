@@ -46,7 +46,17 @@ namespace Narazaka.Unity.AAPMA.Editor
         internal class LayerPass
         {
             static string OneParameter = "__AAPMA__OneParameter__";
+            // Float で宣言する（Bool ではない）: Unity の 1D BlendTree blendParameter は Float 必須。
+            // avatar 既存の Bool IsLocal は MA/NDMF が build 時に Float に Force-promote し、
+            // 関連 transition (If/IfNot) も自動的に Greater(0.5)/Less(0.5) に書き換えるので整合する。
+            static string IsLocalParameter = "IsLocal";
             List<string> _parameters = new List<string>();
+
+            void EnsureIsLocalParameter()
+            {
+                if (_parameters.Contains(IsLocalParameter)) return;
+                _parameters.Add(IsLocalParameter);
+            }
             List<AnimatorControllerLayer> _layers = new List<AnimatorControllerLayer>();
             List<ChildMotion> _childMotions = new List<ChildMotion>();
             Dictionary<float, string> _hiddenConsts = new Dictionary<float, string>();
@@ -106,6 +116,23 @@ namespace Narazaka.Unity.AAPMA.Editor
                     .ToArray(),
                 };
                 return animator;
+            }
+
+            Motion WrapWithIsLocal(AAPSetting setting, Motion smoother)
+            {
+                if (setting.SmoothingTarget == SmoothingTarget.Both) return smoother;
+
+                EnsureIsLocalParameter();
+
+                var inputName = setting.Input1.Parameter;
+                var outputName = setting.Output.Parameter;
+                var passthrough = New1D($"Passthrough {outputName}", inputName,
+                    setting.Input1.Min, NewClip(outputName, setting.Input1.Min),
+                    setting.Input1.Max, NewClip(outputName, setting.Input1.Max));
+
+                return setting.SmoothingTarget == SmoothingTarget.LocalOnly
+                    ? New1D($"LocalOnly {outputName}",  IsLocalParameter, 0, passthrough, 1, smoother)
+                    : New1D($"RemoteOnly {outputName}", IsLocalParameter, 0, smoother,    1, passthrough);
             }
 
             void ProcessSetting(AAPSetting setting)
@@ -256,7 +283,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 }
 
                 var outer = New1D($"ExpSmooth {outputName}", smoothAmountSource, 0, innerA, 1, innerB);
-                AddLayerForMotion(outer, writeDefaultValues: false);
+                AddLayerForMotion(WrapWithIsLocal(setting, outer), writeDefaultValues: false);
             }
 
             void LinearSmoothing(AAPSetting setting)
@@ -309,7 +336,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                     add(OneParameter, outputSelf);
                     add(stepSizeSource, linearBlend);
                 });
-                AddLayerForMotion(root, writeDefaultValues: true);
+                AddLayerForMotion(WrapWithIsLocal(setting, root), writeDefaultValues: true);
             }
 
             void AndGate(AAPSetting setting)

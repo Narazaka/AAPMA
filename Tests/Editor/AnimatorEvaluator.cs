@@ -24,6 +24,10 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
         }
 
         public void SetFloat(string name, float value) => _animator.SetFloat(name, value);
+        /// <summary>
+        /// 0/1 を Float として書き込む。AAPMA は IsLocal を Float で宣言する（Unity 1D BlendTree の blendParameter は Float 必須）ため SetBool ではなく SetFloat を経由する。
+        /// </summary>
+        public void SetBool(string name, bool value) => _animator.SetFloat(name, value ? 1f : 0f);
         public float GetFloat(string name) => _animator.GetFloat(name);
 
         /// <summary>1 フレーム = 1/60 秒で n フレーム進める。</summary>

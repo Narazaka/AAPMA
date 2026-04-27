@@ -296,6 +296,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 MinMax(_input1);
                 Param(_output);
                 DrawCoefficient(T.SmoothAmount, nameof(AAPSetting.ExpSmoothAmount), withMaxField: false);
+                DrawSmoothingTarget();
             }
 
             void LinearSmoothing()
@@ -304,6 +305,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 MinMax(_input1);
                 Param(_output);
                 DrawCoefficient(T.StepSize, nameof(AAPSetting.LinStepSize), withMaxField: true);
+                DrawSmoothingTarget();
             }
 
             void AndGate()
@@ -432,6 +434,17 @@ namespace Narazaka.Unity.AAPMA.Editor
                 }
             }
 
+            void DrawSmoothingTarget()
+            {
+                var prop = _property.FindPropertyRelative(nameof(AAPSetting.SmoothingTarget));
+                EditorGUI.BeginChangeCheck();
+                var newIdx = EditorGUI.Popup(line, T.SmoothingTarget.GUIContent,
+                    prop.enumValueIndex,
+                    SmoothingTargetUtil.Labels.Select(l => l.GUIContent).ToArray());
+                if (EditorGUI.EndChangeCheck()) prop.enumValueIndex = newIdx;
+                NextLine();
+            }
+
             void DrawExpression(string expression)
             {
                 var color = GUI.color;
@@ -474,6 +487,9 @@ namespace Narazaka.Unity.AAPMA.Editor
             public static istring TruthA1B0 = new istring("A=1, B=0", "A=1, B=0");
             public static istring TruthA1B1 = new istring("A=1, B=1", "A=1, B=1");
             public static istring Presets = new istring("Presets", "プリセット");
+            public static istring SmoothingTarget = new istring("Target", "対象",
+                "Whether smoothing applies on local avatar, remote avatars, or both.",
+                "ローカル / リモート / 両方のどれにスムージングを適用するか");
         }
 
         class DrawerHeight : DrawerBase
@@ -513,6 +529,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                         height += ParamHeight;       // output
                         height += LineHeight;        // checkbox
                         height += LineHeight;        // value or paramName
+                        height += LineHeight;        // smoothing target popup
                         break;
                     case LogicType.LinearSmoothing:
                         height += LineHeight;        // expression
@@ -524,6 +541,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                         {
                             height += LineHeight;    // Max field (parametric mode only)
                         }
+                        height += LineHeight;        // smoothing target popup
                         break;
                     case LogicType.And:
                     case LogicType.Or:
