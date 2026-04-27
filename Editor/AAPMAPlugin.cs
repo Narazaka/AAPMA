@@ -133,6 +133,15 @@ namespace Narazaka.Unity.AAPMA.Editor
                     case LogicType.LinearSmoothing:
                         LinearSmoothing(setting);
                         break;
+                    case LogicType.And:
+                        AndGate(setting);
+                        break;
+                    case LogicType.Or:
+                        OrGate(setting);
+                        break;
+                    case LogicType.Not:
+                        NotGate(setting);
+                        break;
                 }
             }
 
@@ -298,6 +307,57 @@ namespace Narazaka.Unity.AAPMA.Editor
                     add(stepSizeSource, linearBlend);
                 });
                 AddLayerForMotion(root, writeDefaultValues: true);
+            }
+
+            void AndGate(AAPSetting setting)
+            {
+                var inputAName = setting.Input1.Parameter;
+                var inputBName = setting.Input2.Parameter;
+                var outputName = setting.Output.Parameter;
+
+                _parameters.Add(inputAName);
+                _parameters.Add(inputBName);
+                _parameters.Add(outputName);
+
+                var clip0 = NewClip(outputName, 0f);
+                var clip1 = NewClip(outputName, 1f);
+
+                var inner = New1D($"AND inner {outputName}", inputBName, 0f, clip0, 1f, clip1);
+                var outer = New1D($"AND {outputName}", inputAName, 0f, clip0, 1f, inner);
+                AddLayerForMotion(outer, writeDefaultValues: false);
+            }
+
+            void OrGate(AAPSetting setting)
+            {
+                var inputAName = setting.Input1.Parameter;
+                var inputBName = setting.Input2.Parameter;
+                var outputName = setting.Output.Parameter;
+
+                _parameters.Add(inputAName);
+                _parameters.Add(inputBName);
+                _parameters.Add(outputName);
+
+                var clip0 = NewClip(outputName, 0f);
+                var clip1 = NewClip(outputName, 1f);
+
+                var inner = New1D($"OR inner {outputName}", inputBName, 0f, clip0, 1f, clip1);
+                var outer = New1D($"OR {outputName}", inputAName, 0f, inner, 1f, clip1);
+                AddLayerForMotion(outer, writeDefaultValues: false);
+            }
+
+            void NotGate(AAPSetting setting)
+            {
+                var inputName = setting.Input1.Parameter;
+                var outputName = setting.Output.Parameter;
+
+                _parameters.Add(inputName);
+                _parameters.Add(outputName);
+
+                var clip0 = NewClip(outputName, 0f);
+                var clip1 = NewClip(outputName, 1f);
+
+                var bt = New1D($"NOT {outputName}", inputName, 0f, clip1, 1f, clip0);
+                AddLayerForMotion(bt, writeDefaultValues: false);
             }
 
             void AddChildMotion(string parameter, Motion motion)
