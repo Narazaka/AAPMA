@@ -25,15 +25,14 @@ namespace Narazaka.Unity.AAPMA.Editor
         void Pass(BuildContext ctx)
         {
             var aapmas = ctx.AvatarRootObject.GetComponentsInChildren<AAPMA>();
-            var settingsByLayer = aapmas.GroupBy(aapma => aapma.LayerType).ToDictionary(group => group.Key, group => group.SelectMany(aapma => aapma.Settings).ToArray());
-
-            foreach (var pair in settingsByLayer)
+            
+            foreach (var aapma in aapmas)
             {
-                var animator = new LayerPass().Build(pair.Value);
+                var animator = new LayerPass().Build(aapma.Settings);
                 if (animator == null) continue;
-                var mergeAnimator = ctx.AvatarRootObject.AddComponent<ModularAvatarMergeAnimator>();
+                var mergeAnimator = aapma.gameObject.AddComponent<ModularAvatarMergeAnimator>();
                 mergeAnimator.animator = animator;
-                mergeAnimator.layerType = pair.Key;
+                mergeAnimator.layerType = aapma.LayerType;
                 mergeAnimator.matchAvatarWriteDefaults = true;
             }
 
