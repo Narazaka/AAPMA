@@ -142,14 +142,19 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
             Assert.That(ev.GetFloat("Out"), Is.EqualTo(10f).Within(0.01f));
         }
 
+        // LocalOnly / RemoteOnly target は VRCAnimatorLayerControl で smoother layer の weight を制御する仕組み。
+        // Editor テスト環境では VRC ランタイム依存の StateBehaviour が発火しないため、
+        // テストでは smoother layer (index 1, control layer が index 0) の weight を手動で設定して
+        // on-side / off-side をシミュレートする。
+
         [Test]
-        public void LocalOnly_LocalSide_Smooths()
+        public void LocalOnly_OnSide_Smooths()
         {
             var controller = new AAPMAPlugin.LayerPass().Build(
                 new[] { Make(0.5f, target: SmoothingTarget.LocalOnly) });
 
             using var ev = new AnimatorEvaluator(controller);
-            ev.SetBool("IsLocal", true);
+            ev.SetLayerWeight(1, 1f); // smoother layer を on-side として有効化
             ev.SetFloat("In", 1f);
             ev.Step(50);
 
@@ -157,27 +162,27 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
         }
 
         [Test]
-        public void LocalOnly_RemoteSide_PassesThrough()
+        public void LocalOnly_OffSide_OutputNotDriven()
         {
             var controller = new AAPMAPlugin.LayerPass().Build(
                 new[] { Make(0.5f, target: SmoothingTarget.LocalOnly) });
 
             using var ev = new AnimatorEvaluator(controller);
-            ev.SetBool("IsLocal", false);
+            // smoother layer weight = 0（default）。smoother は Out に何も書き込まない。
             ev.SetFloat("In", 1f);
-            ev.Step(2); // パススルーは Remap と同型なので 2 frame で完全一致
+            ev.Step(5);
 
-            Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.001f));
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(0f).Within(0.001f));
         }
 
         [Test]
-        public void RemoteOnly_RemoteSide_Smooths()
+        public void RemoteOnly_OnSide_Smooths()
         {
             var controller = new AAPMAPlugin.LayerPass().Build(
                 new[] { Make(0.5f, target: SmoothingTarget.RemoteOnly) });
 
             using var ev = new AnimatorEvaluator(controller);
-            ev.SetBool("IsLocal", false);
+            ev.SetLayerWeight(1, 1f);
             ev.SetFloat("In", 1f);
             ev.Step(50);
 
@@ -185,17 +190,16 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
         }
 
         [Test]
-        public void RemoteOnly_LocalSide_PassesThrough()
+        public void RemoteOnly_OffSide_OutputNotDriven()
         {
             var controller = new AAPMAPlugin.LayerPass().Build(
                 new[] { Make(0.5f, target: SmoothingTarget.RemoteOnly) });
 
             using var ev = new AnimatorEvaluator(controller);
-            ev.SetBool("IsLocal", true);
             ev.SetFloat("In", 1f);
-            ev.Step(2);
+            ev.Step(5);
 
-            Assert.That(ev.GetFloat("Out"), Is.EqualTo(1f).Within(0.001f));
+            Assert.That(ev.GetFloat("Out"), Is.EqualTo(0f).Within(0.001f));
         }
     }
 }
