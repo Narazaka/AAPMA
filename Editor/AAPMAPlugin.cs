@@ -6,8 +6,6 @@ using System.Linq;
 using UnityEditor.Animations;
 using nadena.dev.modular_avatar.core;
 using UnityEditor;
-using VRC.SDK3.Avatars.Components;
-using VRC.SDKBase;
 
 [assembly: ExportsPlugin(typeof(Narazaka.Unity.AAPMA.Editor.AAPMAPlugin))]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Narazaka.Unity.AAPMA.Editor.Tests")]
@@ -30,7 +28,7 @@ namespace Narazaka.Unity.AAPMA.Editor
             
             foreach (var aapma in aapmas)
             {
-                var animator = new LayerPass(aapma.LayerType).Build(aapma.Settings);
+                var animator = new LayerPass().Build(aapma.Settings);
                 if (animator == null) continue;
                 var mergeAnimator = aapma.gameObject.AddComponent<ModularAvatarMergeAnimator>();
                 mergeAnimator.animator = animator;
@@ -51,14 +49,6 @@ namespace Narazaka.Unity.AAPMA.Editor
             // avatar 既存の Bool IsLocal は MA/NDMF が build 時に Float に Force-promote し、
             // 関連 transition (If/IfNot) も自動的に Greater(0.5)/Less(0.5) に書き換えるので整合する。
             static string IsLocalParameter = "IsLocal";
-
-            readonly VRCAvatarDescriptor.AnimLayerType _layerType;
-
-            public LayerPass(VRCAvatarDescriptor.AnimLayerType layerType = VRCAvatarDescriptor.AnimLayerType.FX)
-            {
-                _layerType = layerType;
-            }
-
             List<string> _parameters = new List<string>();
 
             void EnsureIsLocalParameter()
@@ -67,9 +57,6 @@ namespace Narazaka.Unity.AAPMA.Editor
                 _parameters.Add(IsLocalParameter);
             }
             List<AnimatorControllerLayer> _layers = new List<AnimatorControllerLayer>();
-            List<AnimatorControllerLayer> _localOnlySmoothers = new List<AnimatorControllerLayer>();
-            List<AnimatorControllerLayer> _remoteOnlySmoothers = new List<AnimatorControllerLayer>();
-            List<(VRCAnimatorLayerControl behaviour, AnimatorControllerLayer target)> _layerControlsToFixup = new List<(VRCAnimatorLayerControl, AnimatorControllerLayer)>();
             List<ChildMotion> _childMotions = new List<ChildMotion>();
             Dictionary<float, string> _hiddenConsts = new Dictionary<float, string>();
             int _linDeltaCounter = 0;
@@ -99,22 +86,6 @@ namespace Narazaka.Unity.AAPMA.Editor
                 if (_childMotions.Count > 0)
                 {
                     _layers.Insert(0, MakeLayerForMotion(MakeRootDirect()));
-                }
-                // control layer は smoother layer よりも前 (低 index) に配置する。
-                // Unity は layer 0 の weight を 1 に固定するが control layer は常時 1 で動くため都合が良く、
-                // smoother (defaultWeight=0) を index 0 に置かないためのプレースホルダも兼ねる。
-                if (_localOnlySmoothers.Count > 0)
-                {
-                    _layers.Insert(0, MakeControlLayer(SmoothingTarget.LocalOnly, _localOnlySmoothers));
-                }
-                if (_remoteOnlySmoothers.Count > 0)
-                {
-                    _layers.Insert(0, MakeControlLayer(SmoothingTarget.RemoteOnly, _remoteOnlySmoothers));
-                }
-                // 全ての layer 挿入完了後に VRCAnimatorLayerControl.layer に最終 index を書き込む
-                foreach (var (behaviour, target) in _layerControlsToFixup)
-                {
-                    behaviour.layer = _layers.IndexOf(target);
                 }
                 var animator = new AnimatorController
                 {
@@ -146,144 +117,21 @@ namespace Narazaka.Unity.AAPMA.Editor
                 return animator;
             }
 
-            void AddSmootherLayer(AAPSetting setting, Motion smoother, bool writeDefaultValues)
+            Motion WrapWithIsLocal(AAPSetting setting, Motion smoother)
             {
-                var target = setting.SmoothingTarget;
-                // 非対応 LayerType + 非 Both → Both にフォールバック（Drawer 側で防止しているが build 時保険）
-                if (target != SmoothingTarget.Both && !IsLayerTypeSupportedForControl(_layerType))
-                {
-                    target = SmoothingTarget.Both;
-                }
-
-                if (target == SmoothingTarget.Both)
-                {
-                    AddLayerForMotion(smoother, writeDefaultValues);
-                    return;
-                }
+                if (setting.SmoothingTarget == SmoothingTarget.Both) return smoother;
 
                 EnsureIsLocalParameter();
-                var layer = MakeLayerForMotion(smoother, writeDefaultValues);
-                layer.defaultWeight = 0;
-                _layers.Add(layer);
 
-                if (target == SmoothingTarget.LocalOnly) _localOnlySmoothers.Add(layer);
-                else _remoteOnlySmoothers.Add(layer);
-            }
+                var inputName = setting.Input1.Parameter;
+                var outputName = setting.Output.Parameter;
+                var passthrough = New1D($"Passthrough {outputName}", inputName,
+                    setting.Input1.Min, NewClip(outputName, setting.Input1.Min),
+                    setting.Input1.Max, NewClip(outputName, setting.Input1.Max));
 
-            AnimatorControllerLayer MakeControlLayer(SmoothingTarget target, List<AnimatorControllerLayer> smootherLayers)
-            {
-                var blendableLayer = MapToBlendableLayer(_layerType);
-                var name = $"AAPMA {target} Control";
-
-                var onState = new AnimatorState
-                {
-                    name = "On",
-                    hideFlags = HideFlags.HideInHierarchy,
-                    writeDefaultValues = true,
-                };
-                var offState = new AnimatorState
-                {
-                    name = "Off",
-                    hideFlags = HideFlags.HideInHierarchy,
-                    writeDefaultValues = true,
-                };
-
-                foreach (var smoother in smootherLayers)
-                {
-                    var onBehaviour = onState.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
-                    onBehaviour.playable = blendableLayer;
-                    onBehaviour.goalWeight = 1f;
-                    onBehaviour.blendDuration = 0f;
-                    _layerControlsToFixup.Add((onBehaviour, smoother));
-
-                    var offBehaviour = offState.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
-                    offBehaviour.playable = blendableLayer;
-                    offBehaviour.goalWeight = 0f;
-                    offBehaviour.blendDuration = 0f;
-                    _layerControlsToFixup.Add((offBehaviour, smoother));
-                }
-
-                // LocalOnly: On when IsLocal > 0.5, Off when IsLocal < 0.5
-                // RemoteOnly: On when IsLocal < 0.5, Off when IsLocal > 0.5
-                var toOnMode = target == SmoothingTarget.LocalOnly
-                    ? AnimatorConditionMode.Greater
-                    : AnimatorConditionMode.Less;
-                var toOffMode = target == SmoothingTarget.LocalOnly
-                    ? AnimatorConditionMode.Less
-                    : AnimatorConditionMode.Greater;
-
-                offState.transitions = new[]
-                {
-                    new AnimatorStateTransition
-                    {
-                        name = "ToOn",
-                        destinationState = onState,
-                        hasExitTime = false,
-                        duration = 0f,
-                        hideFlags = HideFlags.HideInHierarchy,
-                        conditions = new[]
-                        {
-                            new AnimatorCondition { mode = toOnMode, parameter = IsLocalParameter, threshold = 0.5f }
-                        },
-                    }
-                };
-                onState.transitions = new[]
-                {
-                    new AnimatorStateTransition
-                    {
-                        name = "ToOff",
-                        destinationState = offState,
-                        hasExitTime = false,
-                        duration = 0f,
-                        hideFlags = HideFlags.HideInHierarchy,
-                        conditions = new[]
-                        {
-                            new AnimatorCondition { mode = toOffMode, parameter = IsLocalParameter, threshold = 0.5f }
-                        },
-                    }
-                };
-
-                var stateMachine = new AnimatorStateMachine
-                {
-                    name = name,
-                    hideFlags = HideFlags.HideInHierarchy,
-                    entryPosition = new Vector3(0, 0),
-                    anyStatePosition = new Vector3(0, 100),
-                    exitPosition = new Vector3(0, 200),
-                    states = new[]
-                    {
-                        new ChildAnimatorState { state = onState, position = new Vector3(300, 0) },
-                        new ChildAnimatorState { state = offState, position = new Vector3(300, 100) },
-                    },
-                    defaultState = offState,
-                };
-
-                return new AnimatorControllerLayer
-                {
-                    name = name,
-                    stateMachine = stateMachine,
-                    defaultWeight = 1,
-                };
-            }
-
-            internal static bool IsLayerTypeSupportedForControl(VRCAvatarDescriptor.AnimLayerType type)
-            {
-                return type == VRCAvatarDescriptor.AnimLayerType.FX
-                    || type == VRCAvatarDescriptor.AnimLayerType.Action
-                    || type == VRCAvatarDescriptor.AnimLayerType.Additive
-                    || type == VRCAvatarDescriptor.AnimLayerType.Gesture;
-            }
-
-            static VRC_AnimatorLayerControl.BlendableLayer MapToBlendableLayer(VRCAvatarDescriptor.AnimLayerType type)
-            {
-                switch (type)
-                {
-                    case VRCAvatarDescriptor.AnimLayerType.FX: return VRC_AnimatorLayerControl.BlendableLayer.FX;
-                    case VRCAvatarDescriptor.AnimLayerType.Action: return VRC_AnimatorLayerControl.BlendableLayer.Action;
-                    case VRCAvatarDescriptor.AnimLayerType.Additive: return VRC_AnimatorLayerControl.BlendableLayer.Additive;
-                    case VRCAvatarDescriptor.AnimLayerType.Gesture: return VRC_AnimatorLayerControl.BlendableLayer.Gesture;
-                    default: throw new System.InvalidOperationException($"LayerType {type} cannot be mapped to BlendableLayer");
-                }
+                return setting.SmoothingTarget == SmoothingTarget.LocalOnly
+                    ? New1D($"LocalOnly {outputName}",  IsLocalParameter, 0, passthrough, 1, smoother)
+                    : New1D($"RemoteOnly {outputName}", IsLocalParameter, 0, smoother,    1, passthrough);
             }
 
             void ProcessSetting(AAPSetting setting)
@@ -434,7 +282,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                 }
 
                 var outer = New1D($"ExpSmooth {outputName}", smoothAmountSource, 0, innerA, 1, innerB);
-                AddSmootherLayer(setting, outer, writeDefaultValues: false);
+                AddLayerForMotion(WrapWithIsLocal(setting, outer), writeDefaultValues: false);
             }
 
             void LinearSmoothing(AAPSetting setting)
@@ -487,7 +335,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                     add(OneParameter, outputSelf);
                     add(stepSizeSource, linearBlend);
                 });
-                AddSmootherLayer(setting, root, writeDefaultValues: true);
+                AddLayerForMotion(WrapWithIsLocal(setting, root), writeDefaultValues: true);
             }
 
             void AndGate(AAPSetting setting)

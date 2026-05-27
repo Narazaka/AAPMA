@@ -437,26 +437,6 @@ namespace Narazaka.Unity.AAPMA.Editor
             void DrawSmoothingTarget()
             {
                 var prop = _property.FindPropertyRelative(nameof(AAPSetting.SmoothingTarget));
-                var aapma = _property.serializedObject.targetObject as AAPMA;
-                var supported = aapma != null
-                    && AAPMAPlugin.LayerPass.IsLayerTypeSupportedForControl(aapma.LayerType);
-
-                if (!supported)
-                {
-                    // 非対応 LayerType (Base/Sitting/IKPose/TPose) では VRCAnimatorLayerControl が使えないため
-                    // SmoothingTarget は Both に強制し popup を disable
-                    if (prop.enumValueIndex != (int)SmoothingTarget.Both)
-                    {
-                        prop.enumValueIndex = (int)SmoothingTarget.Both;
-                    }
-                    EditorGUI.BeginDisabledGroup(true);
-                    EditorGUI.Popup(line, T.SmoothingTarget.GUIContent, 0,
-                        new[] { SmoothingTargetUtil.Labels[0].GUIContent });
-                    EditorGUI.EndDisabledGroup();
-                    NextLine();
-                    return;
-                }
-
                 EditorGUI.BeginChangeCheck();
                 var newIdx = EditorGUI.Popup(line, T.SmoothingTarget.GUIContent,
                     prop.enumValueIndex,
@@ -507,9 +487,9 @@ namespace Narazaka.Unity.AAPMA.Editor
             public static istring TruthA1B0 = new istring("A=1, B=0", "A=1, B=0");
             public static istring TruthA1B1 = new istring("A=1, B=1", "A=1, B=1");
             public static istring Presets = new istring("Presets", "プリセット");
-            public static istring SmoothingTarget = new istring("Mode", "動作",
-                "Target of smoothing effect: local view only, remote view only, or always.",
-                "スムージングが効く対象: ローカル / リモート / 常時");
+            public static istring SmoothingTarget = new istring("Target", "対象",
+                "Whether smoothing applies on local avatar, remote avatars, or both.",
+                "ローカル / リモート / 両方のどれにスムージングを適用するか");
         }
 
         class DrawerHeight : DrawerBase
