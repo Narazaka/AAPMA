@@ -443,7 +443,17 @@ namespace Narazaka.Unity.AAPMA.Editor
                     SmoothingTargetUtil.Labels.Select(l => l.GUIContent).ToArray());
                 if (EditorGUI.EndChangeCheck()) prop.enumValueIndex = newIdx;
                 NextLine();
+
+                if (prop.enumValueIndex != (int)SmoothingTarget.Both)
+                {
+                    var helpRect = line;
+                    helpRect.height = SmoothingTargetHelpHeight;
+                    EditorGUI.HelpBox(helpRect, T.SmoothingTargetHelp, MessageType.Info);
+                    line.y += SmoothingTargetHelpHeight + EditorGUIUtility.standardVerticalSpacing;
+                }
             }
+
+            static float SmoothingTargetHelpHeight => EditorGUIUtility.singleLineHeight * 2;
 
             void DrawExpression(string expression)
             {
@@ -487,9 +497,12 @@ namespace Narazaka.Unity.AAPMA.Editor
             public static istring TruthA1B0 = new istring("A=1, B=0", "A=1, B=0");
             public static istring TruthA1B1 = new istring("A=1, B=1", "A=1, B=1");
             public static istring Presets = new istring("Presets", "プリセット");
-            public static istring SmoothingTarget = new istring("Target", "対象",
-                "Whether smoothing applies on local avatar, remote avatars, or both.",
-                "ローカル / リモート / 両方のどれにスムージングを適用するか");
+            public static istring SmoothingTarget = new istring("Mode", "動作",
+                "Where smoothing applies: local view, remote view, or always.",
+                "スムージングが効く対象: ローカル / リモート / 常時");
+            public static istring SmoothingTargetHelp = new istring(
+                "Smoothing only applies on the selected side. On the other side, Input is written directly to Output.",
+                "選択した側でのみスムージングが効きます。反対側では Input がそのまま Output に出力されます。");
         }
 
         class DrawerHeight : DrawerBase
@@ -530,6 +543,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                         height += LineHeight;        // checkbox
                         height += LineHeight;        // value or paramName
                         height += LineHeight;        // smoothing target popup
+                        height += SmoothingTargetHelpExtra; // help box when target != Both
                         break;
                     case LogicType.LinearSmoothing:
                         height += LineHeight;        // expression
@@ -542,6 +556,7 @@ namespace Narazaka.Unity.AAPMA.Editor
                             height += LineHeight;    // Max field (parametric mode only)
                         }
                         height += LineHeight;        // smoothing target popup
+                        height += SmoothingTargetHelpExtra; // help box when target != Both
                         break;
                     case LogicType.And:
                     case LogicType.Or:
@@ -566,6 +581,16 @@ namespace Narazaka.Unity.AAPMA.Editor
             float LineHeight => EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
             float ParamValueHeight => LineHeight * 2;
             float ParamHeight => LineHeight;
+
+            float SmoothingTargetHelpExtra
+            {
+                get
+                {
+                    var prop = _property.FindPropertyRelative(nameof(AAPSetting.SmoothingTarget));
+                    if (prop.enumValueIndex == (int)SmoothingTarget.Both) return 0f;
+                    return EditorGUIUtility.singleLineHeight * 2 + EditorGUIUtility.standardVerticalSpacing;
+                }
+            }
         }
     }
 }

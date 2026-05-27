@@ -2,11 +2,11 @@ namespace Narazaka.Unity.AAPMA
 {
     public enum SmoothingTarget
     {
-        [IString("Local & Remote", "ローカル & リモート")]
+        [IString("Always", "常時")]
         Both,
-        [IString("Local Only", "ローカルのみ")]
+        [IString("Local", "ローカル")]
         LocalOnly,
-        [IString("Remote Only", "リモートのみ")]
+        [IString("Remote", "リモート")]
         RemoteOnly,
     }
 }
