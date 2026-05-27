@@ -23,6 +23,7 @@ https://github.com/Narazaka/AAPMA/releases/latest から `net.narazaka.vrchat.aa
 
 ## Changelog
 
+- 0.2.0-beta.4: Smooth local/remoteをパススルー動作とする
 - 0.2.0-beta.3: Smooth local/remoteが正しく動作しなかった問題を修正
 - 0.2.0-beta.2: MA Parametersのパラメーターリネームが効かなかった問題を修正
 - 0.2.0-beta.1: Smooth local/remote 追加
