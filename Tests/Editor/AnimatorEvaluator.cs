@@ -30,6 +30,12 @@ namespace Narazaka.Unity.AAPMA.Editor.Tests
         public void SetBool(string name, bool value) => _animator.SetFloat(name, value ? 1f : 0f);
         public float GetFloat(string name) => _animator.GetFloat(name);
 
+        /// <summary>
+        /// Layer weight を手動設定。VRCAnimatorLayerControl は VRC ランタイム依存で editor テスト環境では発火しないため、
+        /// LocalOnly / RemoteOnly target の smoother layer weight をテストでは手動で 0 / 1 にしてシミュレートする。
+        /// </summary>
+        public void SetLayerWeight(int layerIndex, float weight) => _animator.SetLayerWeight(layerIndex, weight);
+
         /// <summary>1 フレーム = 1/60 秒で n フレーム進める。</summary>
         public void Step(int frames = 1)
         {
