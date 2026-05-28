@@ -24,10 +24,11 @@ namespace Narazaka.Unity.AAPMA.Editor
 
         void Pass(BuildContext ctx)
         {
-            var aapmas = ctx.AvatarRootObject.GetComponentsInChildren<AAPMA>();
+            var aapmas = ctx.AvatarRootObject.GetComponentsInChildren<AAPMA>(true);
             
             foreach (var aapma in aapmas)
             {
+                if (!aapma.enabled) continue;
                 var animator = new LayerPass().Build(aapma.Settings);
                 if (animator == null) continue;
                 var mergeAnimator = aapma.gameObject.AddComponent<ModularAvatarMergeAnimator>();
